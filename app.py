@@ -5,6 +5,7 @@ import streamlit.components.v1 as components
 
 from dyn201_bot import dyn201_chat, check_solution
 
+
 # --------------------------------------------------
 # SAYFA AYARLARI
 # --------------------------------------------------
@@ -19,7 +20,7 @@ st.markdown(
     <style>
     .sticky-avatar {
         position: sticky;
-        top: 80px;
+        top: 120px;
     }
     </style>
     """,
@@ -74,12 +75,8 @@ with right_col:
 
     # Kullanıcıdan yeni mesaj
     user_msg = st.chat_input(
-        "DYN201 ile ilgili soru sor veya çözüm adımını yaz..."
-    )
-
-    # Kullanıcıdan yeni mesaj
-    user_msg = st.chat_input(
-        "DYN201 ile ilgili soru sor veya çözüm adımını yaz..."
+        "DYN201 ile ilgili soru sor veya çözüm adımını yaz...",
+        key="dyn201_chat_input",
     )
 
     if user_msg:
@@ -103,43 +100,29 @@ with right_col:
         with st.chat_message("assistant"):
             st.markdown(bot_reply)
 
-        # --- Avatarın cevabı yüksek sesle okuması için JS'e mesaj gönder ---
+        # --- Avatarın cevabı yüksek sesle okuması için iframe'e mesaj gönder ---
         tts_text_json = json.dumps(bot_reply)
         st.markdown(
             f"""
             <script>
-            window.postMessage({{
-              type: "dyn201_tts",
-              text: {tts_text_json}
-            }}, "*");
+            // avatar_widget iframe'ini bul ve içine mesaj gönder
+            const frame = window.document.querySelector("iframe[src*='avatar_widget.html']");
+            if (frame && frame.contentWindow) {{
+                frame.contentWindow.postMessage({{
+                  type: "dyn201_tts",
+                  text: {tts_text_json}
+                }}, "*");
+            }}
             </script>
             """,
             unsafe_allow_html=True,
         )
 
-
-        # Yeni cevabı hemen ekranda göster
-        with st.chat_message("assistant"):
-            st.markdown(bot_reply)
-
-        # --- Avatarın cevabı yüksek sesle okuması için JS'e mesaj gönder ---
-        tts_text_json = json.dumps(bot_reply)
-        st.markdown(
-            f"""
-            <script>
-            window.postMessage({{
-              type: "dyn201_tts",
-              text: {tts_text_json}
-            }}, "*");
-            </script>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    # ----- FOTOĞRAF YÜKLEME -----
+    # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME -----
     st.markdown("### Soru / Çözüm Fotoğrafı Yükle")
     st.caption(
-        "Dynamics ile ilgili bir **soru** veya **defterindeki çözümün fotoğrafını** buraya yükleyebilirsin."
+        "Dynamics ile ilgili bir **soru** veya **defterindeki çözümünün fotoğrafını** "
+        "buraya yükleyebilirsin. Avatar çözümünü kontrol eder."
     )
 
     uploaded_file = st.file_uploader(
@@ -156,7 +139,7 @@ with right_col:
 
 
 # --------------------------------------------------
-# MİKROFON → CHAT GİRDİSİ (Web Speech API entegrasyonu)
+# MİKROFON → CHAT GİRDİSİ (avatar'dan gelen sesli giriş)
 # --------------------------------------------------
 st.markdown(
     """
@@ -172,7 +155,6 @@ st.markdown(
         for (const ta of areas) {
           if (ta.placeholder === 'DYN201 ile ilgili soru sor veya çözüm adımını yaz...') {
             ta.value = text;
-
             const enterEvent = new KeyboardEvent('keydown', {
               key: 'Enter',
               keyCode: 13,
@@ -189,4 +171,3 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
