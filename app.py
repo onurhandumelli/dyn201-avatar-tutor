@@ -1,3 +1,5 @@
+import json
+
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -75,7 +77,7 @@ with right_col:
         "DYN201 ile ilgili soru sor veya çözüm adımını yaz..."
     )
 
-    if user_msg:
+        if user_msg:
         # Kullanıcı mesajını geçmişe ekle
         st.session_state.chat_history.append(
             {"role": "user", "content": user_msg}
@@ -95,6 +97,20 @@ with right_col:
         # Yeni cevabı hemen ekranda göster
         with st.chat_message("assistant"):
             st.markdown(bot_reply)
+
+        # --- Avatarın cevabı yüksek sesle okuması için JS'e mesaj gönder ---
+        tts_text_json = json.dumps(bot_reply)
+        st.markdown(
+            f"""
+            <script>
+            window.postMessage({{
+              type: "dyn201_tts",
+              text: {tts_text_json}
+            }}, "*");
+            </script>
+            """,
+            unsafe_allow_html=True,
+        )
 
     # ----- FOTOĞRAF YÜKLEME -----
     st.markdown("### Soru / Çözüm Fotoğrafı Yükle")
