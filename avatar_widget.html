@@ -244,5 +244,64 @@
       stopSpeaking();
     });
   </script>
+ <!-- MİKROFON BUTONU VE WEB SPEECH API -->
+<div style="margin-top: 16px; text-align: center;">
+  <button id="mic-btn"
+          style="padding: 8px 16px; border-radius: 999px; border: none;
+                 background-color: #00b894; color: white; font-weight: bold; cursor: pointer;">
+    🎤 Konuşmayı Başlat / Durdur
+  </button>
+  <p id="mic-status" style="color: #cccccc; font-size: 12px; margin-top: 8px;"></p>
+</div>
+
+<script>
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (SpeechRecognition) {
+    const recog = new SpeechRecognition();
+    recog.lang = "tr-TR";
+    recog.continuous = false;
+    recog.interimResults = false;
+
+    const btn = document.getElementById("mic-btn");
+    const status = document.getElementById("mic-status");
+
+    let listening = false;
+
+    btn.onclick = function() {
+      if (!listening) {
+        recog.start();
+        listening = true;
+        status.textContent = "Dinliyorum...";
+      } else {
+        recog.stop();
+        listening = false;
+        status.textContent = "Durduruldu.";
+      }
+    };
+
+    recog.onresult = function(event) {
+      const text = event.results[0][0].transcript;
+      status.textContent = "Algılanan: " + text;
+
+      // Streamlit uygulamasına gönder
+      window.parent.postMessage(
+        { type: "dyn201_voice_input", text: text },
+        "*"
+      );
+    };
+
+    recog.onerror = function(e) {
+      status.textContent = "Ses tanıma hatası: " + e.error;
+      listening = false;
+    };
+  } else {
+    const status = document.getElementById("mic-status");
+    if (status) {
+      status.textContent = "Tarayıcı Web Speech API (ses tanıma) desteklemiyor.";
+    }
+  }
+</script>
+ 
 </body>
 </html>
