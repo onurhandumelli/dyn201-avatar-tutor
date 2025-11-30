@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <title>DYN201 Avatar</title>
@@ -7,12 +7,12 @@
     body {
       margin: 0;
       padding: 10px;
-      background: #0b1020;
+      background: #050814;
       color: #f5f5f5;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    .avatar-container {
+    .avatar-wrapper {
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -21,16 +21,16 @@
     }
 
     .head {
-      width: 180px;
-      height: 200px;
-      background: linear-gradient(180deg, #202a40, #141b2c);
-      border-radius: 50% 50% 46% 46%;
+      width: 190px;
+      height: 210px;
+      background: radial-gradient(circle at 30% 20%, #3bd9ff 0, #131b33 40%, #050814 100%);
+      border-radius: 50% 50% 45% 45%;
       position: relative;
-      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
     }
 
     .eye {
-      width: 32px;
+      width: 30px;
       height: 18px;
       background: #f5f5f5;
       border-radius: 50px;
@@ -39,8 +39,8 @@
       overflow: hidden;
     }
 
-    .eye.left { left: 40px; }
-    .eye.right { right: 40px; }
+    .eye.left { left: 45px; }
+    .eye.right { right: 45px; }
 
     .pupil {
       width: 12px;
@@ -49,11 +49,11 @@
       border-radius: 50%;
       position: absolute;
       top: 3px;
-      left: 10px;
+      left: 9px;
     }
 
     .mouth {
-      width: 80px;
+      width: 82px;
       height: 18px;
       background: #111;
       border-radius: 0 0 50px 50px;
@@ -61,26 +61,31 @@
       left: 50%;
       transform: translateX(-50%);
       bottom: 40px;
-      transition: height 0.12s ease, transform 0.12s ease;
+      transition: height 0.12s ease, transform 0.12s ease, background 0.12s ease;
     }
 
     .mouth.talking {
-      height: 40px;
-      transform: translateX(-50%) translateY(8px);
-      background: #aa2244;
+      height: 36px;
+      transform: translateX(-50%) translateY(6px);
+      background: #b32a4a;
     }
 
     .torso {
-      width: 140px;
-      height: 90px;
-      background: linear-gradient(180deg, #1d946a, #13614a);
+      width: 145px;
+      height: 95px;
+      background: linear-gradient(180deg, #1abf79, #0f6b45);
       border-radius: 30px;
-      margin-top: -10px;
-      box-shadow: 0 0 16px rgba(0, 255, 165, 0.25);
+      margin-top: -12px;
+      box-shadow: 0 0 18px rgba(0, 255, 165, 0.28);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 18px;
     }
 
     .btn {
-      margin-top: 18px;
       padding: 8px 16px;
       border-radius: 999px;
       border: none;
@@ -89,23 +94,34 @@
       font-weight: 600;
       cursor: pointer;
       box-shadow: 0 0 10px rgba(0, 255, 165, 0.3);
+      font-size: 12px;
+      white-space: nowrap;
     }
 
     .btn:hover {
       background: #1f8f82;
     }
 
+    .btn.stop {
+      background: #e53935;
+      box-shadow: 0 0 10px rgba(255, 82, 82, 0.35);
+    }
+
+    .btn.stop:hover {
+      background: #c62828;
+    }
+
     .hint {
       margin-top: 10px;
       font-size: 11px;
-      opacity: 0.8;
+      opacity: 0.85;
       text-align: center;
       max-width: 260px;
     }
   </style>
 </head>
 <body>
-  <div class="avatar-container">
+  <div class="avatar-wrapper">
     <div class="head">
       <div class="eye left">
         <div class="pupil"></div>
@@ -117,21 +133,44 @@
     </div>
     <div class="torso"></div>
 
-    <button id="speakBtn" class="btn">Avatar cevabı sesli okusun</button>
+    <div class="btn-row">
+      <button id="speakBtn" class="btn">Cevabı sesli okusun</button>
+      <button id="stopBtn" class="btn stop">Durdur</button>
+    </div>
+
     <div class="hint">
       Bu avatar tamamen FREEWARE teknolojilerle yapıldı.<br />
-      Gemini cevabını tarayıcı sesiyle okuyor ve konuşma sırasında animasyon yapıyor.
+      Gemini cevabını tarayıcıdaki Türkçe sesle okuyor ve konuşma sırasında animasyon yapıyor.
     </div>
   </div>
 
   <script>
-    // Streamlit tarafında Python, buradaki placeholder'ı gerçek metinle değiştiriyor.
+    // Python tarafı burayı son cevapla dolduruyor
     const answerText = `{{ANSWER_PLACEHOLDER}}`;
 
     const mouth = document.getElementById("mouth");
     const speakBtn = document.getElementById("speakBtn");
+    const stopBtn = document.getElementById("stopBtn");
 
     let talkingInterval = null;
+    let voices = [];
+
+    function loadVoices() {
+      voices = window.speechSynthesis.getVoices() || [];
+    }
+
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    function pickTurkishVoice() {
+      if (!voices.length) return null;
+      // Dil kodunda "tr" geçen sesi bulmaya çalış
+      return (
+        voices.find(v => v.lang && v.lang.toLowerCase().startsWith("tr")) ||
+        voices.find(v => v.lang && v.lang.toLowerCase().includes("tr")) ||
+        null
+      );
+    }
 
     function startMouthAnimation() {
       if (talkingInterval) return;
@@ -141,14 +180,16 @@
     }
 
     function stopMouthAnimation() {
-      clearInterval(talkingInterval);
-      talkingInterval = null;
+      if (talkingInterval) {
+        clearInterval(talkingInterval);
+        talkingInterval = null;
+      }
       mouth.classList.remove("talking");
     }
 
     function speak(text) {
       if (!("speechSynthesis" in window)) {
-        alert("Tarayıcında speechSynthesis desteği yok (Chrome kullanmayı dene).");
+        alert("Tarayıcında speechSynthesis desteği yok (Chrome / Edge dene).");
         return;
       }
       if (!text || text.trim().length === 0) {
@@ -156,8 +197,21 @@
         return;
       }
 
+      // Eski konuşmaları ve animasyonu durdur
+      window.speechSynthesis.cancel();
+      stopMouthAnimation();
+
       const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "en-US"; // istersen "tr-TR" yapabilirsin ama bazı tarayıcılarda sınırlı
+
+      const trVoice = pickTurkishVoice();
+      if (trVoice) {
+        utter.voice = trVoice;
+        utter.lang = trVoice.lang;
+      } else {
+        // Ses listesinde Türkçe yoksa en azından dil kodunu TR yap
+        utter.lang = "tr-TR";
+      }
+
       utter.rate = 1.0;
 
       utter.onstart = () => {
@@ -168,12 +222,26 @@
         stopMouthAnimation();
       };
 
-      window.speechSynthesis.cancel(); // eski konuşmaları iptal et
       window.speechSynthesis.speak(utter);
+    }
+
+    function stopSpeaking() {
+      if (!("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      stopMouthAnimation();
     }
 
     speakBtn.addEventListener("click", () => {
       speak(answerText);
+    });
+
+    stopBtn.addEventListener("click", () => {
+      stopSpeaking();
+    });
+
+    // Sayfa her yüklendiğinde varsa önceki konuşmayı kes
+    window.addEventListener("load", () => {
+      stopSpeaking();
     });
   </script>
 </body>
