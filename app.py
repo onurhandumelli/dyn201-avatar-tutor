@@ -125,20 +125,21 @@ st.markdown(
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (data && data.type === "dyn201_voice_input") {
-        const text = data.text;
+        const text = data.text || "";
 
-        // Streamlit chat_input alanını bul (placeholder'a göre)
-        const inputs = window.parent.document.querySelectorAll('input');
-        for (const inp of inputs) {
-          if (inp.getAttribute('placeholder') === 'DYN201 ile ilgili soru sor veya çözüm adımını yaz...') {
-            inp.value = text;
+        // Streamlit chat_input alanını bul (textarea + placeholder)
+        const areas = window.document.querySelectorAll('textarea');
+        for (const ta of areas) {
+          if (ta.placeholder === 'DYN201 ile ilgili soru sor veya çözüm adımını yaz...') {
+            ta.value = text;
+
             const enterEvent = new KeyboardEvent('keydown', {
               key: 'Enter',
               keyCode: 13,
               which: 13,
               bubbles: true
             });
-            inp.dispatchEvent(enterEvent);
+            ta.dispatchEvent(enterEvent);
             break;
           }
         }
@@ -148,3 +149,4 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
