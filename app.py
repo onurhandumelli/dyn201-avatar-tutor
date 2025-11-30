@@ -3,7 +3,6 @@ import streamlit.components.v1 as components
 
 from dyn201_bot import dyn201_chat, check_solution
 
-
 # --------------------------------------------------
 # SAYFA AYARLARI
 # --------------------------------------------------
