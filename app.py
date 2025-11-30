@@ -77,7 +77,7 @@ with right_col:
         "DYN201 ile ilgili soru sor veya çözüm adımını yaz..."
     )
 
-        if user_msg:
+ if user_msg:
         # Kullanıcı mesajını geçmişe ekle
         st.session_state.chat_history.append(
             {"role": "user", "content": user_msg}
