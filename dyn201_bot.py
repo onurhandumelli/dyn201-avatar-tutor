@@ -67,8 +67,8 @@ def dyn201_chat(history, user_message, extra_context=None):
     if dyn201_refs:
         transcript_lines.append(
             "=== DYN201 & CTMS RESMI REFERANS BASLANGICI ===\n"
-            + dyn201_refs +
-            "\n=== DYN201 & CTMS RESMI REFERANS BITISI ===\n"
+            + dyn201_refs
+            + "\n=== DYN201 & CTMS RESMI REFERANS BITISI ===\n"
         )
 
     # 4) Sohbet geçmişini ekle
@@ -115,7 +115,8 @@ def check_solution(image_bytes, extra_instruction=None):
         tmp.write(image_bytes)
         tmp_path = tmp.name
 
-      base_prompt = (
+    # Bu artık with bloğunun DIŞINDA, soldan hizalı
+    base_prompt = (
         "You are a teaching assistant for the course Engineering Mechanics: Dynamics (DYN201).\n"
         "The student uploaded an image that may contain one or more of the following:\n"
         " - a handwritten solution,\n"
@@ -128,7 +129,6 @@ def check_solution(image_bytes, extra_instruction=None):
         "4) Always answer in TURKISH.\n"
         "5) Give kısa, yönlendirici ipuçları ver; fakat tam sınav çözümü yazma.\n"
     )
-
 
     if extra_instruction:
         base_prompt += "\nEk öğretmen notu / özel talimat:\n" + extra_instruction + "\n"
