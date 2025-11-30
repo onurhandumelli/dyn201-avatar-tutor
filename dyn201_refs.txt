@@ -1,0 +1,216 @@
+### CTMS KNOWLEDGE BASE FOR DYN201
+Bu dosya, MATLAB/MathWorks üzerindeki "Control Tutorials for MATLAB and Simulink (CTMS)"
+örneklerinden özetlenmiş bilgileri içerir. Konular DYN201 (Engineering Mechanics: Dynamics)
+ve giriş kontrol dersleri ile doğrudan bağlantılıdır.
+
+============================================================
+SECTION 1 – INTRODUCTION: SYSTEM MODELING
+(source: Introduction_SystemModeling.mlx)
+
+- Modelleme adımları:
+  1) Fiziksel sistemin tanımlanması (elektro-mekanik, mekanik, termal vb.).
+  2) Uygun koordinat sisteminin seçilmesi.
+  3) Serbest cisim diyagramlarının (FBD) çıkarılması.
+  4) Newton’un hareket yasaları veya enerji prensipleri ile diferansiyel denklemlerin yazılması.
+  5) Denklemlerin daha sonra kullanılmak üzere düzenlenmesi (çoğunlukla tek giriş–tek çıkış için).
+
+- Tipik örnek: **kütle–yay–sönümleyici (mass–spring–damper)** sistemi.
+  - Kütle: m [kg]
+  - Yay sabiti: k [N/m]
+  - Sönüm katsayısı: b [N·s/m]
+  - Giriş kuvveti: F(t) [N]
+  - Çıkış: kütlenin konumu x(t) [m]
+
+- Newton’un 2. yasası ile x doğrultusunda:
+    ΣFₓ = F(t) − b·ẋ − k·x = m·ẍ
+  Bu, sistemin **hükmedici diferansiyel denklemi**dir.
+
+- Devam eden adımlar:
+  - Diferansiyel denklemin Laplace dönüşümü alınarak **transfer fonksiyonu** elde edilir.
+  - Alternatif olarak durum değişkenleri tanımlanıp **state–space** gösterimi kurulur.
+  - DYN201 açısından önemli nokta: her değişkenin birimlerini, işaret yönlerini ve referans
+    eksenini açıkça tanımlamak; aksi hâlde işaret hataları kaçınılmazdır.
+
+============================================================
+SECTION 2 – INTRODUCTION: SYSTEM ANALYSIS
+(source: Introduction_SystemAnalysis.mlx)
+
+- Modellemeyi yaptıktan sonra sistemin **zaman alanı** ve **frekans alanı** davranışı incelenir.
+- Transfer fonksiyonunun pay ve paydasından:
+  - Pay = **sıfırlar (zeros)**
+  - Payda = **kutuplar (poles)** elde edilir.
+
+- Kutupların yorumlanması:
+  - Gerçek eksende negatif kutup → kararlı, üstel azalan cevap.
+  - Sağ yarı düzlemde kutup → kararsız sistem.
+  - Karmaşık eşlenik kutuplar → salınımlı cevap, sönüm oranı ζ ve doğal frekans ωₙ ile ilişkili.
+
+- Zaman alanı performans ölçütleri:
+  - **Rise time** (tr): cevabın ilk kez %10–90 bandına çıkma süresi.
+  - **Settling time** (ts): cevabın kararlı değer etrafındaki %2 veya %5 bandına oturması.
+  - **Overshoot** (Mₚ): maksimum değerin kararlı duruma göre yüzdesi.
+  - **Steady–state error** (ess): t → ∞ iken referans ile çıktı arasındaki fark.
+
+- DYN201 için kritik:
+  - Her bir performans ölçütünün **kutup yerleşimiyle** doğrudan ilişkili olduğunu anlamak;
+  - Bir denklemin sadece formül değil, fiziksel davranış anlamına geldiğini vurgulamak.
+
+============================================================
+SECTION 3 – INTRODUCTION: ROOT LOCUS CONTROLLER DESIGN
+(source: Introduction_ControlRootLocus.mlx)
+
+- Root locus, **kapalı çevrim kutuplarının** kazanç K değiştikçe s-düzleminde nasıl hareket ettiğini
+  gösteren bir yöntemdir.
+
+- Başlangıç noktaları: açık çevrim kutupları.
+- Bitiş noktaları: açık çevrim sıfırları ve ∞ (fazladan kutuplar için asimptotlar).
+
+- Tasarım adımları:
+  1) Bitki (plant) transfer fonksiyonunu yaz.
+  2) Bir geri besleme yapısı (unity feedback) kur.
+  3) Root locus çizdir (MATLAB: rlocus, sisotool).
+  4) İstenen zaman cevabı kriterlerine göre (ζ, ωₙ, tr, ts, Mₚ) uygun kutup yerlerini seç.
+  5) Gerekirse faz–önde veya faz–geride kompanzatör ekleyerek kutupları istenen bölgeye taşı.
+
+- DYN201 bağlantısı:
+  - Kutupların s-düzlemindeki konumu ↔ sistemin salınım, sönüm ve hız özellikleri.
+  - Tasarımcı, “kutupları nereye taşımak istediğini” fiziksel hedeflerle ilişkilendirir.
+
+============================================================
+SECTION 4 – INTRODUCTION: FREQUENCY DOMAIN METHODS
+(source: Introduction_ControlFrequency.mlx)
+
+- Frekans alanı yöntemleri (Bode diyagramları, Nyquist, Nichols), sistemi
+  giriş sinüsleri altında inceleyerek kararlılık ve performans analizi yapar.
+
+- Bode diyagramı:
+  - Genlik (magnitude) – frekans grafiği [dB vs log(ω)]
+  - Faz – frekans grafiği [deg vs log(ω)]
+
+- Önemli kavramlar:
+  - **Gain margin (GM)** ve **phase margin (PM)**: kararlılık rezervleri.
+  - **Bandwidth**: sistemin “etkin” frekans aralığı; genellikle hız ve gürültü hassasiyetiyle ilişkili.
+  - Yüksek bant genişliği → hızlı cevap ama gürültüye duyarlı; düşük bant genişliği → yavaş ama daha kararlı.
+
+- DYN201’de, frekans alanı analizi:
+  - Pol–sıfır yerleşim bilgisiyle birlikte, sistemin kararlılığını içgüdüsel olarak anlamaya yardım eder.
+  - Özellikle kontrol dersi tarafında PID, lead–lag tasarımları için temel altyapıyı oluşturur.
+
+============================================================
+SECTION 5 – CRUISE CONTROL: SYSTEM ANALYSIS
+(source: CruiseControl_SystemAnalysis.mlx)
+
+- Örnek sistem: **araç hız kontrolü (cruise control)**.
+  - Giriş: motor kuvveti veya gaz pedalı komutu u(t).
+  - Çıkış: araç hızı v(t).
+
+- Basitleştirilmiş model:
+  - m: araç kütlesi [kg]
+  - b: yuvarlanma/ hava sürtünme katsayısı [N·s/m]
+  - Dinamik denklem:
+      m·v̇(t) + b·v(t) = u(t)
+  - Transfer fonksiyonu:
+      P(s) = V(s)/U(s) = 1 / (m·s + b)
+
+- Performans şartları:
+  - Yeterince küçük hız hatası (steady–state error)
+  - Kısa yükselme süresi, uygun yerleşme süresi
+  - Aşırı overshoot olmaması (örneğin %10’dan küçük)
+
+- Bu örnek üzerinden:
+  - Kütle–sürtünme parametrelerinin kutup yerleşimini nasıl değiştirdiği gösterilir.
+  - Basit P veya PI kontrolörlerin hız cevabını nasıl şekillendirdiği incelenir.
+
+============================================================
+SECTION 6 – DC MOTOR SPEED: SYSTEM ANALYSIS
+(source: MotorSpeed_SystemAnalysis.mlx)
+
+- Örnek sistem: **DC motorun hız kontrolü**.
+  - Giriş: uygulanan armatür gerilimi vₐ(t).
+  - Çıkış: motor açısal hızı ω(t).
+
+- Tipik parametreler:
+  - R: armatür direnci [Ω]
+  - L: armatür endüktansı [H]
+  - Kₑ, Kₜ: geri elektromotor kuvvet ve tork sabiti
+  - J: rotor atalet momenti [kg·m²]
+  - b: viskoz sürtünme katsayısı
+
+- Elektriksel denklem:
+    L·i̇ₐ + R·iₐ + Kₑ·ω = vₐ
+- Mekanik denklem:
+    J·ω̇ + b·ω = Kₜ·iₐ
+
+- Bu iki denklem birleştirilerek motorun transfer fonksiyonu elde edilir:
+    Ω(s)/Vₐ(s) = ...  (parametrelere bağlı bir ikinci dereceden sistem)
+
+- İncelenen noktalar:
+  - Kutup yapısı, rise time, steady–state hız hatası.
+  - Açık çevrim sistem ile kapalı çevrim hız kontrolü kıyaslanır.
+  - Kararlılık ve parametre duyarlılığına dair yorumlar yapılır.
+
+============================================================
+SECTION 7 – DC MOTOR POSITION: PID CONTROLLER DESIGN
+(source: MotorPosition_ControlPID.mlx)
+
+- Aynı DC motor modeli bu kez **pozisyon kontrolü** için kullanılır.
+  - Çıkış: rotor açısı θ(t).
+  - Hedef: referans açıyı hızlı ve az hatayla takip etmek.
+
+- Klasik PID denetleyici:
+    C(s) = Kₚ + Kᵢ/s + Kd·s
+
+- Tasarım adımları:
+  1) Bitkinin (motor pozisyonunun) transfer fonksiyonunu yaz.
+  2) PID parametreleri için başlangıç değerleri seç (ör. Ziegler–Nichols, deneysel ayar).
+  3) Step cevabını inceleyerek Kₚ, Kᵢ, Kd üzerinde ince ayar yap.
+     - Kₚ ↑ → hız artar, ama overshoot da artar.
+     - Kᵢ ↑ → kalıcı hatayı azaltır, ancak sistem daha salınımlı olabilir.
+     - Kd ↑ → sönüm oranını artırır, gürültüye hassasiyet değişir.
+
+- DYN201 açısından:
+  - PID katsayılarının kutup/sıfır yerleşimine etkisi vurgulanır.
+  - Step cevabı üzerinden rise time, overshoot, settling time gibi kavramlar tekrar edilir.
+
+============================================================
+SECTION 8 – EXTRAS: DESIGNING LEAD AND LAG COMPENSATORS
+(source: Extras_Leadlag.mlx)
+
+- Lead ve lag kompanzatörler, sistemin kapalı çevrim kutup yapısını hassas biçimde şekillendirmek için kullanılır.
+
+- **Lead (phase–lead) kompanzatör**:
+  - Temel form:
+      C(s) = Kc (s − z₀) / (s − p₀),  |z₀| < |p₀|
+  - Daha fazla faz önde bırakır; root locus’u sol tarafa çekerek:
+    - daha hızlı cevap,
+    - artan bant genişliği,
+    - daha az yerleşme süresi sağlar.
+  - Dezavantaj: gürültüye duyarlılığı artırabilir.
+
+- **Lag kompanzatör**:
+  - Genellikle düşük frekans kazancını yükseltmek (kalıcı hatayı küçültmek) için kullanılır.
+  - Fazı çok değiştirmez, bu yüzden dinamik cevabı fazla bozmaz.
+  - Temel fikir: DC kazancı artırırken yüksek frekansta kazancı düşük tutmak.
+
+- **Lead–lag kombinasyonları**:
+  - Hem dinamik cevabı (hız, overshoot) iyileştirmek
+  - Hem de steady–state error’u azaltmak için birlikte kullanılabilir.
+
+============================================================
+SECTION 9 – HOW TO USE THIS FILE INSIDE THE AVATAR
+
+- Bu metin, DYN201 avatarı için “ders kitabı özeti” görevi görür.
+- Asistan cevap verirken:
+  - Önce bu dosyadaki açıklamalara bakmalı,
+  - Daha sonra kendi genel fizik / kontrol bilgisini kullanarak bilgiyi tamamlamalı,
+  - Fakat bu dosyada yazanlara ters düşen tahminler yapmamalıdır.
+
+- Özellikle:
+  - Sistem modelleme sorularında **SECTION 1**,
+  - Zaman cevabı ve performans metriklerinde **SECTION 2**,
+  - Root locus tasarımında **SECTION 3 & 8**,
+  - Frekans cevabı sorularında **SECTION 4**,
+  - Araç hız kontrolü sorularında **SECTION 5**,
+  - DC motor hız/pozisyon sorularında **SECTION 6 & 7**
+
+referans alınmalıdır.
