@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DYN201 Avatar</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 10px;
+      background: #0b1020;
+      color: #f5f5f5;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .avatar-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      height: 400px;
+    }
+
+    .head {
+      width: 180px;
+      height: 200px;
+      background: linear-gradient(180deg, #202a40, #141b2c);
+      border-radius: 50% 50% 46% 46%;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+    }
+
+    .eye {
+      width: 32px;
+      height: 18px;
+      background: #f5f5f5;
+      border-radius: 50px;
+      position: absolute;
+      top: 70px;
+      overflow: hidden;
+    }
+
+    .eye.left { left: 40px; }
+    .eye.right { right: 40px; }
+
+    .pupil {
+      width: 12px;
+      height: 12px;
+      background: #111;
+      border-radius: 50%;
+      position: absolute;
+      top: 3px;
+      left: 10px;
+    }
+
+    .mouth {
+      width: 80px;
+      height: 18px;
+      background: #111;
+      border-radius: 0 0 50px 50px;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 40px;
+      transition: height 0.12s ease, transform 0.12s ease;
+    }
+
+    .mouth.talking {
+      height: 40px;
+      transform: translateX(-50%) translateY(8px);
+      background: #aa2244;
+    }
+
+    .torso {
+      width: 140px;
+      height: 90px;
+      background: linear-gradient(180deg, #1d946a, #13614a);
+      border-radius: 30px;
+      margin-top: -10px;
+      box-shadow: 0 0 16px rgba(0, 255, 165, 0.25);
+    }
+
+    .btn {
+      margin-top: 18px;
+      padding: 8px 16px;
+      border-radius: 999px;
+      border: none;
+      background: #26a69a;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 255, 165, 0.3);
+    }
+
+    .btn:hover {
+      background: #1f8f82;
+    }
+
+    .hint {
+      margin-top: 10px;
+      font-size: 11px;
+      opacity: 0.8;
+      text-align: center;
+      max-width: 260px;
+    }
+  </style>
+</head>
+<body>
+  <div class="avatar-container">
+    <div class="head">
+      <div class="eye left">
+        <div class="pupil"></div>
+      </div>
+      <div class="eye right">
+        <div class="pupil"></div>
+      </div>
+      <div id="mouth" class="mouth"></div>
+    </div>
+    <div class="torso"></div>
+
+    <button id="speakBtn" class="btn">Avatar cevabı sesli okusun</button>
+    <div class="hint">
+      Bu avatar tamamen FREEWARE teknolojilerle yapıldı.<br />
+      Gemini cevabını tarayıcı sesiyle okuyor ve konuşma sırasında animasyon yapıyor.
+    </div>
+  </div>
+
+  <script>
+    // Streamlit tarafında Python, buradaki placeholder'ı gerçek metinle değiştiriyor.
+    const answerText = `{{ANSWER_PLACEHOLDER}}`;
+
+    const mouth = document.getElementById("mouth");
+    const speakBtn = document.getElementById("speakBtn");
+
+    let talkingInterval = null;
+
+    function startMouthAnimation() {
+      if (talkingInterval) return;
+      talkingInterval = setInterval(() => {
+        mouth.classList.toggle("talking");
+      }, 120);
+    }
+
+    function stopMouthAnimation() {
+      clearInterval(talkingInterval);
+      talkingInterval = null;
+      mouth.classList.remove("talking");
+    }
+
+    function speak(text) {
+      if (!("speechSynthesis" in window)) {
+        alert("Tarayıcında speechSynthesis desteği yok (Chrome kullanmayı dene).");
+        return;
+      }
+      if (!text || text.trim().length === 0) {
+        alert("Önce chat bölümünde bir soru sor ve asistanın cevap vermesini bekle.");
+        return;
+      }
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "en-US"; // istersen "tr-TR" yapabilirsin ama bazı tarayıcılarda sınırlı
+      utter.rate = 1.0;
+
+      utter.onstart = () => {
+        startMouthAnimation();
+      };
+
+      utter.onend = () => {
+        stopMouthAnimation();
+      };
+
+      window.speechSynthesis.cancel(); // eski konuşmaları iptal et
+      window.speechSynthesis.speak(utter);
+    }
+
+    speakBtn.addEventListener("click", () => {
+      speak(answerText);
+    });
+  </script>
+</body>
+</html>
