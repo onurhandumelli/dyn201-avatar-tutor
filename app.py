@@ -14,13 +14,27 @@ st.set_page_config(
     layout="wide",
 )
 
-# Sticky avatar için basit CSS
+# CSS: sticky avatar + kaydırılabilir chat kutusu
 st.markdown(
     """
     <style>
     .sticky-avatar {
         position: sticky;
         top: 120px;
+    }
+
+    /* Chat kutusu: sabit yükseklik + içten scroll */
+    .dyn201-chat-box {
+        max-height: 380px;
+        overflow-y: auto;
+        padding-right: 8px;
+        margin-bottom: 1.2rem;
+        border-radius: 12px;
+    }
+
+    /* Streamlit'in chat mesaj kartlarının arası çok açılmasın */
+    .dyn201-chat-box [data-testid="stChatMessage"] {
+        margin-bottom: 0.4rem;
     }
     </style>
     """,
@@ -32,8 +46,10 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
         {
             "role": "assistant",
-            "content": "Merhaba, ben DYN201 avatar eğitmeninim. "
-                       "Dersle ilgili sorularını sorabilir veya çözümünü anlatabilirsin."
+            "content": (
+                "Merhaba, ben DYN201 avatar eğitmeninim. "
+                "Dersle ilgili sorularını sorabilir veya çözümünü anlatabilirsin."
+            ),
         }
     ]
 
@@ -68,10 +84,15 @@ with left_col:
 with right_col:
     st.markdown("### Soru–Cevap (Chat)")
 
+    # --- KAYDIRILABİLİR CHAT KUTUSU ---
+    st.markdown('<div class="dyn201-chat-box">', unsafe_allow_html=True)
+
     # Geçmiş mesajları göster
     for msg in st.session_state.chat_history:
         with st.chat_message("user" if msg["role"] == "user" else "assistant"):
             st.markdown(msg["content"])
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Kullanıcıdan yeni mesaj
     user_msg = st.chat_input(
@@ -96,7 +117,7 @@ with right_col:
             {"role": "assistant", "content": bot_reply}
         )
 
-        # Yeni cevabı hemen ekranda göster
+        # Yeni cevabı hemen ekranda göster (scroll kutusuna yeni render'da eklenecek)
         with st.chat_message("assistant"):
             st.markdown(bot_reply)
 
@@ -118,7 +139,7 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME -----
+    # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME (CHAT KUTUSUNUN ALTINDA SABİT) -----
     st.markdown("### Soru / Çözüm Fotoğrafı Yükle")
     st.caption(
         "Dynamics ile ilgili bir **soru** veya **defterindeki çözümünün fotoğrafını** "
