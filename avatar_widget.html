@@ -59,6 +59,10 @@
       border-radius: 999px;
       background: #ffffff;
       position: relative;
+      overflow: hidden;
+      /* Göz kırpma animasyonu */
+      transform-origin: center center;
+      animation: blink 4s infinite;
     }
 
     .eye::after {
@@ -72,12 +76,24 @@
       left: 8px;
     }
 
+    @keyframes blink {
+      0%, 88%, 100% {
+        transform: scaleY(1);
+      }
+      90%, 92% {
+        transform: scaleY(0.1);
+      }
+      94%, 96% {
+        transform: scaleY(1);
+      }
+    }
+
     .mouth {
       width: 70px;
       height: 30px;
       border-radius: 0 0 40px 40px;
       background: #020617;
-      transition: height 0.12s ease;
+      transition: height 0.08s ease;
     }
 
     .body {
@@ -172,23 +188,43 @@
     const statusEl = document.getElementById("status");
 
     let selectedVoice = null;
+    let mouthInterval = null;
 
-    // --- 1) Mümkün olan en uygun Türkçe, erkek sese yaklaşmaya çalış ---
+    // --- AĞIZ ANİMASYONU ---
+    function startMouthAnimation() {
+      stopMouthAnimation(); // eski interval varsa temizle
+      let open = false;
+      mouthInterval = setInterval(() => {
+        if (open) {
+          mouth.style.height = "30px"; // kapalı
+        } else {
+          mouth.style.height = "50px"; // açık
+        }
+        open = !open;
+      }, 120); // 120ms'de bir aç/kapa (hafif hızlı, konuşma gibi)
+    }
+
+    function stopMouthAnimation() {
+      if (mouthInterval) {
+        clearInterval(mouthInterval);
+        mouthInterval = null;
+      }
+      mouth.style.height = "30px"; // normal pozisyona dön
+    }
+
+    // --- 1) Türkçe, mümkünse erkek sese yaklaş ---
     function pickTurkishVoice() {
       const voices = synth.getVoices();
       if (!voices || !voices.length) return;
 
-      // Sadece Türkçe dilleri al
       const turkishVoices = voices.filter(v =>
         v.lang && v.lang.toLowerCase().startsWith("tr")
       );
 
-      // Öncelik: ismi erkek gibi olan / natural / online / Tolga / Ahmet vs.
       const maleLike = turkishVoices.find(v =>
         /tolga|ahmet|microsoft|male|erkek|natural/i.test(v.name)
       );
 
-      // 2. tercih: Google Türkçe (genelde daha doğal)
       const googleTr = turkishVoices.find(v =>
         /google/i.test(v.name)
       );
@@ -225,7 +261,6 @@
         const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
         let text = (md ? md.innerText : lastMsg.innerText || "").trim();
 
-        // Gereksiz boşlukları sadeleştir (akışı düzeltir)
         text = text.replace(/\s+/g, " ");
 
         return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
@@ -235,7 +270,7 @@
       }
     }
 
-    // --- 3) Konuşmayı başlat (hafif yavaş, hafif tok) ---
+    // --- 3) Konuşmayı başlat ---
     function startTalking(text) {
       if (!("speechSynthesis" in window)) {
         statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
@@ -243,6 +278,7 @@
       }
 
       synth.cancel();
+      stopMouthAnimation();
 
       const utter = new SpeechSynthesisUtterance(text);
 
@@ -253,27 +289,29 @@
         utter.lang = "tr-TR";
       }
 
-      // Tuning: biraz yavaş, biraz daha tok
-      utter.rate  = 0.93;  // 1.0'dan az: biraz yavaş
-      utter.pitch = 0.9;   // 1.0'dan az: daha kalın/tok
+      // Hafif yavaş, hafif tok
+      utter.rate  = 0.93;
+      utter.pitch = 0.9;
       utter.volume = 1.0;
 
-      mouth.style.height = "42px";
+      utter.onstart = () => {
+        startMouthAnimation();
+        statusEl.textContent = "Cevap sesli olarak okunuyor...";
+      };
 
       utter.onend = () => {
-        mouth.style.height = "30px";
+        stopMouthAnimation();
         statusEl.textContent =
           "Okuma bitti. Son cevabı tekrar dinlemek için butona bas.";
       };
 
       utter.onerror = (e) => {
         console.error("TTS error:", e);
-        mouth.style.height = "30px";
+        stopMouthAnimation();
         statusEl.textContent = "Okuma sırasında bir hata oluştu.";
       };
 
       synth.speak(utter);
-      statusEl.textContent = "Cevap sesli olarak okunuyor...";
     }
 
     // --- 4) Durdur ---
@@ -281,7 +319,7 @@
       if ("speechSynthesis" in window) {
         synth.cancel();
       }
-      mouth.style.height = "30px";
+      stopMouthAnimation();
       statusEl.textContent = "Okuma durduruldu. Tekrar dinlemek için butona bas.";
     }
 
