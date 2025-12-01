@@ -166,73 +166,87 @@
     </div>
   </div>
 
-  <script>
-    const synth = window.speechSynthesis;
-    const mouth = document.getElementById("mouth");
-    const statusEl = document.getElementById("status");
+<script>
+  const synth = window.speechSynthesis;
+  const mouth = document.getElementById("mouth");
+  const statusEl = document.getElementById("status");
 
-    function getLastAssistantMessage() {
-      try {
-        const rootDoc = window.parent.document;
+  function getLastAssistantMessage() {
+    try {
+      const rootDoc = window.parent.document;
 
-        // Tüm chat mesajlarını bul
-        const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
-        if (!msgs.length) {
-          return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+      // Tüm chat mesaj kutularını al
+      const allMsgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
+      if (!allMsgs.length) {
+        return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+      }
+
+      let lastAssistantMsg = null;
+
+      // Sondan başa doğru git → içindeki avatar asistan mı diye bak
+      for (let i = allMsgs.length - 1; i >= 0; i--) {
+        const msg = allMsgs[i];
+        const isAssistant = msg.querySelector('[data-testid="chatAvatarIcon-assistant"]');
+        if (isAssistant) {
+          lastAssistantMsg = msg;
+          break;
         }
-
-        // En son mesaj genelde asistan cevabı oluyor
-        const lastMsg = msgs[msgs.length - 1];
-
-        // İçindeki markdown metnini al
-        const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
-        const text = (md ? md.innerText : lastMsg.innerText || "").trim();
-
-        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
-      } catch (e) {
-        console.error("Son mesaj okunamadı:", e);
-        return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
       }
+
+      if (!lastAssistantMsg) {
+        return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+      }
+
+      // O kutunun içindeki markdown metnini al
+      const md = lastAssistantMsg.querySelector('[data-testid="stMarkdown"]');
+      const text = (md ? md.innerText : lastAssistantMsg.innerText || "").trim();
+
+      return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+    } catch (e) {
+      console.error("Son mesaj okunamadı:", e);
+      return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
     }
+  }
 
-    function startTalking(text) {
-      if (!('speechSynthesis' in window)) {
-        statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
-        return;
-      }
-      synth.cancel();
-
-      const utter = new SpeechSynthesisUtterance(text);
-      utter.lang = "tr-TR";
-      utter.rate = 1.0;
-      utter.pitch = 1.0;
-
-      mouth.style.height = "42px";
-
-      utter.onend = () => {
-        mouth.style.height = "30px";
-      };
-
-      synth.speak(utter);
-      statusEl.textContent = "Cevap sesli olarak okunuyor...";
+  function startTalking(text) {
+    if (!('speechSynthesis' in window)) {
+      statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
+      return;
     }
+    synth.cancel();
 
-    function stopTalking() {
-      if ('speechSynthesis' in window) {
-        synth.cancel();
-      }
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.lang = "tr-TR";
+    utter.rate = 1.0;
+    utter.pitch = 1.0;
+
+    mouth.style.height = "42px";
+
+    utter.onend = () => {
       mouth.style.height = "30px";
-      statusEl.textContent = "Okuma durduruldu.";
+    };
+
+    synth.speak(utter);
+    statusEl.textContent = "Cevap sesli olarak okunuyor...";
+  }
+
+  function stopTalking() {
+    if ('speechSynthesis' in window) {
+      synth.cancel();
     }
+    mouth.style.height = "30px";
+    statusEl.textContent = "Okuma durduruldu.";
+  }
 
-    document.getElementById("btnPlay").addEventListener("click", () => {
-      const text = getLastAssistantMessage();
-      startTalking(text);
-    });
+  document.getElementById("btnPlay").addEventListener("click", () => {
+    const text = getLastAssistantMessage();
+    startTalking(text);
+  });
 
-    document.getElementById("btnStop").addEventListener("click", () => {
-      stopTalking();
-    });
-  </script>
+  document.getElementById("btnStop").addEventListener("click", () => {
+    stopTalking();
+  });
+</script>
+
 </body>
 </html>
