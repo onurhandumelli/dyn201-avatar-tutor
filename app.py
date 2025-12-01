@@ -5,7 +5,6 @@ import streamlit.components.v1 as components
 
 from dyn201_bot import dyn201_chat, check_solution
 
-
 # --------------------------------------------------
 # SAYFA AYARLARI
 # --------------------------------------------------
@@ -14,36 +13,9 @@ st.set_page_config(
     layout="wide",
 )
 
-# CSS: avatar sabit (fixed) + istersen kullanabileceğin chat kutusu stilleri
-st.markdown(
-    """
-    <style>
-    .sticky-avatar {
-        position: fixed;
-        bottom: 40px;
-        left: 40px;
-        z-index: 9999;
-    }
-
-    /* Chat kutusu: sabit yükseklik + içten scroll (istersen kullan) */
-    .dyn201-chat-box {
-        max-height: 380px;
-        overflow-y: auto;
-        padding-right: 8px;
-        margin-bottom: 1.2rem;
-        border-radius: 12px;
-    }
-
-    /* Streamlit'in chat mesaj kartlarının arası çok açılmasın */
-    .dyn201-chat-box [data-testid="stChatMessage"] {
-        margin-bottom: 0.4rem;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
-
-# Sohbet geçmişini tutmak için session_state
+# --------------------------------------------------
+# SOHBET DURUMU
+# --------------------------------------------------
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = [
         {
@@ -55,7 +27,6 @@ if "chat_history" not in st.session_state:
         }
     ]
 
-
 # --------------------------------------------------
 # SAYFA DÜZENİ
 # --------------------------------------------------
@@ -65,14 +36,13 @@ left_col, right_col = st.columns([1, 2])
 
 # ----------------- SOL SÜTUN (AVATAR + NOTLAR) -----------------
 with left_col:
-    # Avatar bileşeni (ekrana sabitlenmiş div içinde)
-    st.markdown('<div class="sticky-avatar">', unsafe_allow_html=True)
+    # Avatar bileşeni (yüksekliği büyüttük ki ALTTKİ BUTONLAR KESİLMESİN)
     try:
         avatar_html = open("avatar_widget.html", "r", encoding="utf-8").read()
-        components.html(avatar_html, height=420)
+        # YÜKSEKLİĞİ ARTIRILAN TEK YER: height=600
+        components.html(avatar_html, height=600, scrolling=False)
     except Exception:
         st.error("avatar_widget.html yüklenemedi.")
-    st.markdown("</div>", unsafe_allow_html=True)
 
     # Ek not alanı
     st.markdown("### Ek DYN201 Notların (isteğe bağlı)")
@@ -111,12 +81,12 @@ with right_col:
             {"role": "assistant", "content": bot_reply}
         )
 
-        # Avatarın cevabı yüksek sesle okuması için iframe'e mesaj gönder
+        # Avatarın cevabı sesli okuması için iframe'e mesaj gönder
+        # (avatar_widget.html içinde window.addEventListener("message", type:"dyn201_tts") dinliyor)
         tts_text_json = json.dumps(bot_reply)
         st.markdown(
             f"""
             <script>
-            // avatar_widget iframe'ini bul ve içine mesaj gönder
             const frame = window.document.querySelector("iframe[src*='avatar_widget.html']");
             if (frame && frame.contentWindow) {{
                 frame.contentWindow.postMessage({{
@@ -129,15 +99,10 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # 3) Bütün sohbet geçmişini sırayla göster (soru + altında cevap)
-    # (İstersen aşağıdaki iki satırın yorum işaretlerini açıp chat-box stilini aktif edebilirsin)
-    # st.markdown('<div class="dyn201-chat-box">', unsafe_allow_html=True)
-
+    # 3) Tüm sohbet geçmişini sırayla göster (her zaman soru + altında cevap)
     for msg in st.session_state.chat_history:
         with st.chat_message("user" if msg["role"] == "user" else "assistant"):
             st.markdown(msg["content"])
-
-    # st.markdown("</div>", unsafe_allow_html=True)
 
     # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME -----
     st.markdown("### Soru / Çözüm Fotoğrafı Yükle")
@@ -158,9 +123,8 @@ with right_col:
         st.markdown("#### Avatarın değerlendirmesi:")
         st.write(feedback)
 
-
 # --------------------------------------------------
-# MİKROFON → CHAT GİRDİSİ (avatar'dan gelen sesli giriş)
+# MİKROFON → CHAT GİRDİSİ (avatar'dan gelen sesli giriş)  — İSTERSEN KULLAN
 # --------------------------------------------------
 st.markdown(
     """
@@ -171,18 +135,18 @@ st.markdown(
       if (data && data.type === "dyn201_voice_input") {
         const text = data.text || "";
 
-        // Streamlit chat_input alanını bul (textarea + placeholder)
-        const areas = window.document.querySelectorAll('textarea');
-        for (const ta of areas) {
-          if (ta.placeholder === 'DYN201 ile ilgili soru sor veya çözüm adımını yaz...') {
-            ta.value = text;
+        // Chat input'u (input veya textarea) placeholder'a göre bul
+        const fields = window.document.querySelectorAll('input, textarea');
+        for (const el of fields) {
+          if (el.placeholder === 'DYN201 ile ilgili soru sor veya çözüm adımını yaz...') {
+            el.value = text;
             const enterEvent = new KeyboardEvent('keydown', {
               key: 'Enter',
               keyCode: 13,
               which: 13,
               bubbles: true
             });
-            ta.dispatchEvent(enterEvent);
+            el.dispatchEvent(enterEvent);
             break;
           }
         }
