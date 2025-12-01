@@ -171,44 +171,36 @@
     const mouth = document.getElementById("mouth");
     const statusEl = document.getElementById("status");
 
-    // Otomatik okuma açık mı?
+    // Otomatik okuma modu
     let autoRead = false;
-    // Kaç tane asistan cevabı gördük
-    let lastAssistantCount = 0;
+    // Son okunan metin (gereksiz tekrarı engellemek için)
+    let lastSpokenText = "";
+    // Observer bir kere kurulsun diye
+    let observerInitialized = false;
 
-    // Tüm asistan mesajlarını ve sonuncunun text'ini getir
-    function getAssistantState() {
+    // En son asistan cevabını al
+    function getLastAssistantMessage() {
       try {
         const rootDoc = window.parent.document;
-
         const allMsgs = Array.from(
           rootDoc.querySelectorAll('div[data-testid="stChatMessage"]')
         );
 
-        if (!allMsgs.length) {
-          return { count: 0, text: "" };
-        }
+        if (!allMsgs.length) return "";
 
-        // Asistan avatarı olan balonlar = asistan cevapları
         let assistantMsgs = allMsgs.filter(msg =>
           msg.querySelector('[data-testid="stChatMessageAvatarAssistant"]')
         );
 
-        // Her ihtimale karşı fallback
-        if (!assistantMsgs.length) {
-          assistantMsgs = allMsgs;
-        }
+        if (!assistantMsgs.length) assistantMsgs = allMsgs;
 
-        const count = assistantMsgs.length;
-        const lastAssistant = assistantMsgs[count - 1];
-
+        const lastAssistant = assistantMsgs[assistantMsgs.length - 1];
         const md = lastAssistant.querySelector('[data-testid="stMarkdown"]');
         const text = (md ? md.innerText : lastAssistant.innerText || "").trim();
-
-        return { count, text };
+        return text;
       } catch (e) {
-        console.error("Asistan mesajları okunamadı:", e);
-        return { count: 0, text: "" };
+        console.error("Son mesaj okunamadı:", e);
+        return "";
       }
     }
 
@@ -250,13 +242,74 @@
       statusEl.textContent = "Okuma durduruldu. Yeni cevaplar sadece metin olarak gösterilecek.";
     }
 
-    // Play: modu aç + o anki son cevabı hemen oku
+    // DOM’a yeni mesaj eklenince tetiklenecek
+    function handleNewMessages(mutationsList) {
+      if (!autoRead) return;
+
+      for (const mutation of mutationsList) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement)) continue;
+
+          // Eklenen node doğrudan chat mesajıysa
+          const directMsgs = node.matches && node.matches('div[data-testid="stChatMessage"]')
+            ? [node]
+            : [];
+
+          // Veya içinde chat mesajı varsa
+          const innerMsgs = Array.from(
+            node.querySelectorAll
+              ? node.querySelectorAll('div[data-testid="stChatMessage"]')
+              : []
+          );
+
+          const msgElems = [...directMsgs, ...innerMsgs];
+          if (!msgElems.length) continue;
+
+          msgElems.forEach(msg => {
+            const isAssistant = !!msg.querySelector('[data-testid="stChatMessageAvatarAssistant"]');
+            if (!isAssistant) return;
+
+            const md = msg.querySelector('[data-testid="stMarkdown"]');
+            const text = (md ? md.innerText : msg.innerText || "").trim();
+            if (!text) return;
+
+            // Aynı metni tekrar tekrar okuma
+            if (text === lastSpokenText) return;
+
+            lastSpokenText = text;
+            startTalking(text);
+          });
+        }
+      }
+    }
+
+    function initObserver() {
+      if (observerInitialized) return;
+      try {
+        const rootDoc = window.parent.document;
+        const target = rootDoc.body;
+        const observer = new MutationObserver(handleNewMessages);
+        observer.observe(target, { childList: true, subtree: true });
+        observerInitialized = true;
+      } catch (e) {
+        console.error("MutationObserver başlatılamadı:", e);
+      }
+    }
+
+    // Script yüklenince observer’ı kur
+    initObserver();
+
+    // Play: modu aç + o anki son cevabı oku
     document.getElementById("btnPlay").addEventListener("click", () => {
       autoRead = true;
-      const state = getAssistantState();
-      lastAssistantCount = state.count; // şu ana kadarki cevap sayısını kaydet
-      startTalking(state.text);
-      statusEl.textContent = "Sesli okuma modu açık. Yeni cevaplar otomatik okunacak.";
+      const text = getLastAssistantMessage();
+      if (text) {
+        lastSpokenText = text;
+        startTalking(text);
+        statusEl.textContent = "Sesli okuma modu açık. Yeni cevaplar otomatik okunacak.";
+      } else {
+        statusEl.textContent = "Okunacak bir DYN201 cevabı bulunamadı.";
+      }
     });
 
     // Stop: modu kapat
@@ -264,19 +317,6 @@
       autoRead = false;
       stopTalking();
     });
-
-    // AutoRead açıksa yeni cevap var mı diye periyodik kontrol:
-    // asistan mesajlarının sayısı arttıysa yeni cevap gelmiş demektir → hemen oku
-    setInterval(() => {
-      if (!autoRead) return;
-
-      const state = getAssistantState();
-
-      if (state.count > lastAssistantCount) {
-        lastAssistantCount = state.count;
-        startTalking(state.text);
-      }
-    }, 1500); // 1.5 sn'de bir kontrol
   </script>
 </body>
 </html>
