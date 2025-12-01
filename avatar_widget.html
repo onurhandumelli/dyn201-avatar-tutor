@@ -6,242 +6,312 @@
   <style>
     body {
       margin: 0;
-      padding: 10px;
-      background: #050814;
-      color: #f5f5f5;
+      padding: 0;
+      background: transparent;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #ffffff;
+    }
+
+    .container {
+      width: 260px;
+      margin: 0 auto;
+      text-align: center;
     }
 
     .avatar-wrapper {
+      margin-top: 8px;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .avatar {
+      position: relative;
+      width: 190px;
+      height: 260px;
+      background: radial-gradient(circle at 30% 0%, #4fd5ff 0, #1e2b4a 45%, #050712 100%);
+      border-radius: 110px 110px 40px 40px;
+      box-shadow: 0 0 25px rgba(0, 255, 255, 0.25);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      height: 400px;
+      padding-top: 34px;
     }
 
+    /* Baş */
     .head {
-      width: 190px;
-      height: 210px;
-      background: radial-gradient(circle at 30% 20%, #3bd9ff 0, #131b33 40%, #050814 100%);
-      border-radius: 50% 50% 45% 45%;
+      width: 140px;
+      height: 140px;
+      background: radial-gradient(circle at 30% 0%, #49c7ff 0, #142038 45%, #050712 100%);
+      border-radius: 50%;
       position: relative;
-      box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+      box-shadow: 0 0 18px rgba(0, 255, 255, 0.4);
+      animation: glow 4s ease-in-out infinite;
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 18px rgba(0, 255, 255, 0.3); }
+      50% { box-shadow: 0 0 30px rgba(0, 255, 255, 0.7); }
     }
 
     .eye {
-      width: 30px;
-      height: 18px;
-      background: #f5f5f5;
-      border-radius: 50px;
       position: absolute;
-      top: 70px;
-      overflow: hidden;
+      top: 45px;
+      width: 16px;
+      height: 16px;
+      background: #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0,0,0,0.3);
     }
 
-    .eye.left { left: 45px; }
-    .eye.right { right: 45px; }
+    .eye.left {
+      left: 35px;
+    }
+    .eye.right {
+      right: 35px;
+    }
 
     .pupil {
-      width: 12px;
-      height: 12px;
-      background: #111;
-      border-radius: 50%;
       position: absolute;
-      top: 3px;
-      left: 9px;
+      top: 4px;
+      left: 5px;
+      width: 6px;
+      height: 6px;
+      background: #000000;
+      border-radius: 50%;
+      animation: pupil-move 5s ease-in-out infinite;
+    }
+
+    @keyframes pupil-move {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(2px); }
+      50% { transform: translateX(-2px); }
+      75% { transform: translateX(0); }
     }
 
     .mouth {
-      width: 82px;
-      height: 18px;
-      background: #111;
-      border-radius: 0 0 50px 50px;
       position: absolute;
+      bottom: 34px;
       left: 50%;
       transform: translateX(-50%);
-      bottom: 40px;
-      transition: height 0.12s ease, transform 0.12s ease, background 0.12s ease;
+      width: 54px;
+      height: 18px;
+      background: #02050e;
+      border-radius: 0 0 26px 26px;
+      overflow: hidden;
     }
 
-    .mouth.talking {
-      height: 36px;
-      transform: translateX(-50%) translateY(6px);
-      background: #b32a4a;
+    .mouth-inner {
+      width: 100%;
+      height: 100%;
+      background: #02050e;
+      border-radius: 0 0 26px 26px;
+      transform-origin: top;
+      animation: talk 2.2s ease-in-out infinite;
     }
 
-    .torso {
-      width: 145px;
-      height: 95px;
-      background: linear-gradient(180deg, #1abf79, #0f6b45);
-      border-radius: 30px;
-      margin-top: -12px;
-      box-shadow: 0 0 18px rgba(0, 255, 165, 0.28);
+    @keyframes talk {
+      0%, 30%, 100% { transform: scaleY(0.35); }
+      10%, 20% { transform: scaleY(1.0); }
+      40%, 50% { transform: scaleY(0.2); }
+      60%, 70% { transform: scaleY(0.8); }
+      80%, 90% { transform: scaleY(0.3); }
     }
 
-    .btn-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 18px;
+    /* Gövde */
+    .body-shape {
+      margin-top: 12px;
+      width: 140px;
+      height: 80px;
+      background: linear-gradient(180deg, #19d29b, #0e8a63);
+      border-radius: 36px;
+      box-shadow: 0 0 18px rgba(0, 255, 170, 0.3);
     }
 
-    .btn {
+    .text-block {
+      font-size: 11px;
+      line-height: 1.4;
+      color: #b8c2ff;
+      margin-top: 10px;
+    }
+
+    .tts-note {
+      font-size: 10px;
+      color: #8e99d8;
+      margin-top: 4px;
+    }
+
+    /* Mikrofon butonu */
+    .mic-btn {
+      margin-top: 14px;
       padding: 8px 16px;
       border-radius: 999px;
       border: none;
-      background: #26a69a;
+      background: linear-gradient(135deg, #00b894, #00cec9);
       color: white;
       font-weight: 600;
+      font-size: 13px;
       cursor: pointer;
-      box-shadow: 0 0 10px rgba(0, 255, 165, 0.3);
-      font-size: 12px;
-      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.35);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s ease;
+    }
+    .mic-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.4);
+      opacity: 0.96;
+    }
+    .mic-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.45);
     }
 
-    .btn:hover {
-      background: #1f8f82;
-    }
-
-    .btn.stop {
-      background: #e53935;
-      box-shadow: 0 0 10px rgba(255, 82, 82, 0.35);
-    }
-
-    .btn.stop:hover {
-      background: #c62828;
-    }
-
-    .hint {
-      margin-top: 10px;
+    .mic-status {
       font-size: 11px;
-      opacity: 0.85;
-      text-align: center;
-      max-width: 260px;
+      color: #cfd2ff;
+      margin-top: 6px;
+      min-height: 14px;
     }
   </style>
 </head>
 <body>
-  <div class="avatar-wrapper">
-    <div class="head">
-      <div class="eye left">
-        <div class="pupil"></div>
+  <div class="container">
+    <div class="avatar-wrapper">
+      <div class="avatar">
+        <div class="head">
+          <div class="eye left">
+            <div class="pupil"></div>
+          </div>
+          <div class="eye right">
+            <div class="pupil"></div>
+          </div>
+          <div class="mouth">
+            <div class="mouth-inner"></div>
+          </div>
+        </div>
+        <div class="body-shape"></div>
       </div>
-      <div class="eye right">
-        <div class="pupil"></div>
-      </div>
-      <div id="mouth" class="mouth"></div>
-    </div>
-    <div class="torso"></div>
-
-    <div class="btn-row">
-      <button id="speakBtn" class="btn">Cevabı sesli okusun</button>
-      <button id="stopBtn" class="btn stop">Durdur</button>
     </div>
 
-    <div class="hint">
-      Bu avatar tamamen FREEWARE teknolojilerle yapıldı.<br />
-      Gemini cevabını tarayıcıdaki Türkçe sesle okuyor ve konuşma sırasında animasyon yapıyor.
+    <div class="text-block">
+      Bu avatar tamamen FREEWARE teknolojilerle çalışır.
+      DYN201 sorularını cevaplarken sana eşlik eder.
     </div>
+    <div class="tts-note">
+      Tarayıcı destekliyorsa, cevaplarını Türkçe sesle okuyabilir
+      ve sesli sorularını dinleyebilir.
+    </div>
+
+    <!-- Mikrofon butonu -->
+    <button id="mic-btn" class="mic-btn">
+      🎤 Konuşmayı Başlat / Durdur
+    </button>
+    <div id="mic-status" class="mic-status"></div>
   </div>
 
+  <!-- JAVASCRIPT: Ses tanıma + TTS entegrasyonu -->
   <script>
-    // Python tarafı burayı son cevapla dolduruyor
-    const answerText = `{{ANSWER_PLACEHOLDER}}`;
+    // -----------------------------
+    // 1) S E S   T A N I M A  (STT)
+    // -----------------------------
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    const mouth = document.getElementById("mouth");
-    const speakBtn = document.getElementById("speakBtn");
-    const stopBtn = document.getElementById("stopBtn");
+    if (SpeechRecognition) {
+      const recog = new SpeechRecognition();
+      recog.lang = "tr-TR";
+      recog.continuous = false;
+      recog.interimResults = false;
 
-    let talkingInterval = null;
-    let voices = [];
+      const btn = document.getElementById("mic-btn");
+      const status = document.getElementById("mic-status");
 
-    function loadVoices() {
-      voices = window.speechSynthesis.getVoices() || [];
-    }
+      let listening = false;
 
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    loadVoices();
+      btn.onclick = function () {
+        if (!listening) {
+          try {
+            recog.start();
+            listening = true;
+            status.textContent = "Dinliyorum...";
+          } catch (e) {
+            status.textContent = "Ses tanıma başlatılamadı.";
+          }
+        } else {
+          recog.stop();
+          listening = false;
+          status.textContent = "Durduruldu.";
+        }
+      };
 
-    function pickTurkishVoice() {
-      if (!voices.length) return null;
-      // Dil kodunda "tr" geçen sesi bulmaya çalış
-      return (
-        voices.find(v => v.lang && v.lang.toLowerCase().startsWith("tr")) ||
-        voices.find(v => v.lang && v.lang.toLowerCase().includes("tr")) ||
-        null
-      );
-    }
+      recog.onresult = function (event) {
+        const text = event.results[0][0].transcript;
+        status.textContent = "Algılanan: " + text;
 
-    function startMouthAnimation() {
-      if (talkingInterval) return;
-      talkingInterval = setInterval(() => {
-        mouth.classList.toggle("talking");
-      }, 120);
-    }
+        // Bu metni Streamlit uygulamasına gönder
+        try {
+          window.parent.postMessage(
+            { type: "dyn201_voice_input", text: text },
+            "*"
+          );
+        } catch (e) {
+          console.warn("postMessage gönderilemedi:", e);
+        }
+      };
 
-    function stopMouthAnimation() {
-      if (talkingInterval) {
-        clearInterval(talkingInterval);
-        talkingInterval = null;
+      recog.onerror = function (e) {
+        status.textContent = "Ses tanıma hatası: " + e.error;
+        listening = false;
+      };
+
+      recog.onend = function () {
+        // Kullanıcı konuşmayı bitirdiğinde otomatik kapanma
+        listening = false;
+        if (status.textContent === "Dinliyorum...") {
+          status.textContent = "Dinleme tamamlandı.";
+        }
+      };
+    } else {
+      const status = document.getElementById("mic-status");
+      if (status) {
+        status.textContent = "Tarayıcı Web Speech API (ses tanıma) desteklemiyor.";
       }
-      mouth.classList.remove("talking");
     }
 
-    function speak(text) {
+    // -----------------------------
+    // 2) T E K S T   T O   S P E E C H
+    // -----------------------------
+    function speakTurkish(text) {
       if (!("speechSynthesis" in window)) {
-        alert("Tarayıcında speechSynthesis desteği yok (Chrome / Edge dene).");
+        console.warn("Tarayıcı speechSynthesis desteklemiyor.");
         return;
       }
-      if (!text || text.trim().length === 0) {
-        alert("Önce chat bölümünde bir soru sor ve asistanın cevap vermesini bekle.");
-        return;
-      }
-
-      // Eski konuşmaları ve animasyonu durdur
-      window.speechSynthesis.cancel();
-      stopMouthAnimation();
 
       const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "tr-TR";
 
-      const trVoice = pickTurkishVoice();
+      // Mümkünse Türkçe bir ses seç
+      const voices = window.speechSynthesis.getVoices();
+      const trVoice =
+        voices.find(v => v.lang.toLowerCase().startsWith("tr")) ||
+        voices.find(v => v.lang.toLowerCase().startsWith("en")) ||
+        null;
       if (trVoice) {
         utter.voice = trVoice;
-        utter.lang = trVoice.lang;
-      } else {
-        // Ses listesinde Türkçe yoksa en azından dil kodunu TR yap
-        utter.lang = "tr-TR";
       }
 
-      utter.rate = 1.0;
-
-      utter.onstart = () => {
-        startMouthAnimation();
-      };
-
-      utter.onend = () => {
-        stopMouthAnimation();
-      };
-
+      window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utter);
     }
 
-    function stopSpeaking() {
-      if (!("speechSynthesis" in window)) return;
-      window.speechSynthesis.cancel();
-      stopMouthAnimation();
-    }
+    // Parent (Streamlit) tarafından TTS için mesaj gelirse dinle
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
 
-    speakBtn.addEventListener("click", () => {
-      speak(answerText);
-    });
-
-    stopBtn.addEventListener("click", () => {
-      stopSpeaking();
-    });
-
-    // Sayfa her yüklendiğinde varsa önceki konuşmayı kes
-    window.addEventListener("load", () => {
-      stopSpeaking();
+      if (data.type === "dyn201_tts" && typeof data.text === "string") {
+        speakTurkish(data.text);
+      }
     });
   </script>
 </body>
