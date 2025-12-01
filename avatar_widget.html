@@ -171,36 +171,24 @@
     const mouth = document.getElementById("mouth");
     const statusEl = document.getElementById("status");
 
-    // Otomatik okuma modu
-    let autoRead = false;
-    // Son okunan metin (gereksiz tekrarı engellemek için)
-    let lastSpokenText = "";
-    // Observer bir kere kurulsun diye
-    let observerInitialized = false;
-
-    // En son asistan cevabını al
     function getLastAssistantMessage() {
       try {
         const rootDoc = window.parent.document;
-        const allMsgs = Array.from(
-          rootDoc.querySelectorAll('div[data-testid="stChatMessage"]')
-        );
 
-        if (!allMsgs.length) return "";
+        const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
+        if (!msgs.length) {
+          return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+        }
 
-        let assistantMsgs = allMsgs.filter(msg =>
-          msg.querySelector('[data-testid="stChatMessageAvatarAssistant"]')
-        );
+        const lastMsg = msgs[msgs.length - 1];
 
-        if (!assistantMsgs.length) assistantMsgs = allMsgs;
+        const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
+        const text = (md ? md.innerText : lastMsg.innerText || "").trim();
 
-        const lastAssistant = assistantMsgs[assistantMsgs.length - 1];
-        const md = lastAssistant.querySelector('[data-testid="stMarkdown"]');
-        const text = (md ? md.innerText : lastAssistant.innerText || "").trim();
-        return text;
+        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
       } catch (e) {
         console.error("Son mesaj okunamadı:", e);
-        return "";
+        return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
       }
     }
 
@@ -209,11 +197,6 @@
         statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
         return;
       }
-      if (!text) {
-        statusEl.textContent = "Şu anda okunacak bir DYN201 cevabı bulamadım.";
-        return;
-      }
-
       synth.cancel();
 
       const utter = new SpeechSynthesisUtterance(text);
@@ -225,9 +208,6 @@
 
       utter.onend = () => {
         mouth.style.height = "30px";
-        if (autoRead) {
-          statusEl.textContent = "Sesli okuma modu açık. Yeni cevaplar otomatik okunacak.";
-        }
       };
 
       synth.speak(utter);
@@ -239,82 +219,15 @@
         synth.cancel();
       }
       mouth.style.height = "30px";
-      statusEl.textContent = "Okuma durduruldu. Yeni cevaplar sadece metin olarak gösterilecek.";
+      statusEl.textContent = "Okuma durduruldu.";
     }
 
-    // DOM’a yeni mesaj eklenince tetiklenecek
-    function handleNewMessages(mutationsList) {
-      if (!autoRead) return;
-
-      for (const mutation of mutationsList) {
-        for (const node of mutation.addedNodes) {
-          if (!(node instanceof HTMLElement)) continue;
-
-          // Eklenen node doğrudan chat mesajıysa
-          const directMsgs = node.matches && node.matches('div[data-testid="stChatMessage"]')
-            ? [node]
-            : [];
-
-          // Veya içinde chat mesajı varsa
-          const innerMsgs = Array.from(
-            node.querySelectorAll
-              ? node.querySelectorAll('div[data-testid="stChatMessage"]')
-              : []
-          );
-
-          const msgElems = [...directMsgs, ...innerMsgs];
-          if (!msgElems.length) continue;
-
-          msgElems.forEach(msg => {
-            const isAssistant = !!msg.querySelector('[data-testid="stChatMessageAvatarAssistant"]');
-            if (!isAssistant) return;
-
-            const md = msg.querySelector('[data-testid="stMarkdown"]');
-            const text = (md ? md.innerText : msg.innerText || "").trim();
-            if (!text) return;
-
-            // Aynı metni tekrar tekrar okuma
-            if (text === lastSpokenText) return;
-
-            lastSpokenText = text;
-            startTalking(text);
-          });
-        }
-      }
-    }
-
-    function initObserver() {
-      if (observerInitialized) return;
-      try {
-        const rootDoc = window.parent.document;
-        const target = rootDoc.body;
-        const observer = new MutationObserver(handleNewMessages);
-        observer.observe(target, { childList: true, subtree: true });
-        observerInitialized = true;
-      } catch (e) {
-        console.error("MutationObserver başlatılamadı:", e);
-      }
-    }
-
-    // Script yüklenince observer’ı kur
-    initObserver();
-
-    // Play: modu aç + o anki son cevabı oku
     document.getElementById("btnPlay").addEventListener("click", () => {
-      autoRead = true;
       const text = getLastAssistantMessage();
-      if (text) {
-        lastSpokenText = text;
-        startTalking(text);
-        statusEl.textContent = "Sesli okuma modu açık. Yeni cevaplar otomatik okunacak.";
-      } else {
-        statusEl.textContent = "Okunacak bir DYN201 cevabı bulunamadı.";
-      }
+      startTalking(text);
     });
 
-    // Stop: modu kapat
     document.getElementById("btnStop").addEventListener("click", () => {
-      autoRead = false;
       stopTalking();
     });
   </script>
