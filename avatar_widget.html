@@ -2,116 +2,237 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-
+  <title>DYN201 Avatar</title>
   <style>
     body {
       margin: 0;
       padding: 0;
       background: transparent;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #edf2ff;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: flex-start;
-      font-family: Arial, sans-serif;
-      color: white;
-      width: 100%;
     }
 
-    /* Avatar container (küçültülmüş boyut) */
-    .avatar-box {
-      width: 230px;
-      height: 250px;
+    .avatar-wrapper {
       display: flex;
-      justify-content: center;
+      flex-direction: column;
       align-items: center;
-      margin-bottom: 12px;
     }
 
-    /* Avatar SVG/video/image buraya koyulacak */
-    .avatar-content {
-      width: 100%;
-      height: 100%;
-      border-radius: 20px;
+    .avatar {
+      width: 230px;
+      height: 330px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0%, #3dedff 0, #0b5ee9 40%, #041632 100%);
+      box-shadow: 0 0 40px rgba(0, 255, 255, 0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
       overflow: hidden;
-      box-shadow: 0 0 25px rgba(0, 255, 255, 0.25);
     }
 
-    /* Açıklama metni */
-    .info-text {
+    .avatar-face {
+      width: 180px;
+      height: 180px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0%, #192947 0, #050816 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .eyes {
+      display: flex;
+      gap: 32px;
+      margin-bottom: 28px;
+    }
+
+    .eye {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #ffffff;
+      position: relative;
+    }
+
+    .eye::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: #020617;
+      top: 8px;
+      left: 8px;
+    }
+
+    .mouth {
+      width: 70px;
+      height: 30px;
+      border-radius: 0 0 40px 40px;
+      background: #020617;
+      transition: height 0.12s ease;
+    }
+
+    .body {
+      margin-top: 12px;
+      width: 180px;
+      height: 120px;
+      border-radius: 40px;
+      background: linear-gradient(180deg, #22c55e, #059669);
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      font-size: 11.5px;
       text-align: center;
-      font-size: 13px;
+      max-width: 260px;
+      color: #cbd5f5;
       line-height: 1.3;
-      width: 230px;
-      opacity: 0.8;
-      margin-bottom: 14px;
     }
 
-    /* Konuşma butonu */
-    .speak-btn {
-      width: 230px;
-      padding: 12px;
-      border-radius: 30px;
-      background: linear-gradient(135deg, #00d3b9, #00a37a);
-      color: black;
-      font-size: 15px;
-      font-weight: bold;
-      text-align: center;
+    .btn-row {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn {
+      border: none;
+      outline: none;
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 12px;
+      font-weight: 600;
       cursor: pointer;
-      user-select: none;
-      box-shadow: 0 0 15px rgba(0, 255, 180, 0.45);
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
 
-    .speak-btn:hover {
-      background: #00c9a7;
+    .btn-play {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: #020617;
+      box-shadow: 0 0 14px rgba(34, 197, 94, 0.5);
+    }
+
+    .btn-stop {
+      background: #ef4444;
+      color: #f9fafb;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.45);
+    }
+
+    .status {
+      margin-top: 6px;
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+      max-width: 260px;
     }
   </style>
 </head>
-
 <body>
+  <div class="avatar-wrapper">
+    <div class="avatar">
+      <div class="avatar-face">
+        <div class="eyes">
+          <div class="eye"></div>
+          <div class="eye"></div>
+        </div>
+        <div class="mouth" id="mouth"></div>
+      </div>
+      <div class="body"></div>
+    </div>
 
-  <!-- AVATAR -->
-  <div class="avatar-box">
-    <div class="avatar-content">
-      <img src="https://i.imgur.com/8bFad6w.png" style="width:100%; height:100%; object-fit:cover;" />
+    <div class="subtitle">
+      Bu avatar tamamen FREEWARE teknolojilerle çalışır.
+      DYN201 sorularını cevaplarken sana eşlik eder.
+      Tarayıcı destekliyorsa cevapları Türkçe sesle okuyabilir.
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-play" id="btnPlay">Cevabı sesli okusun</button>
+      <button class="btn btn-stop" id="btnStop">Durdur</button>
+    </div>
+
+    <div class="status" id="status">
+      Son DYN201 cevabını okumak için butona bas.
     </div>
   </div>
 
-  <!-- ALT YAZI -->
-  <div class="info-text">
-    Bu avatar tamamen FREEWARE teknolojilerle çalışır.<br>
-    DYN201 sorularını cevaplarken sana eşlik eder.<br>
-    Tarayıcı destekliyorsa cevapları Türkçe sesle okuyabilir.
-  </div>
-
-  <!-- SESLİ OKUMA BUTONU -->
-  <div id="speakBtn" class="speak-btn">
-    🔊 Konuşmayı Başlat / Durdur
-  </div>
-
-  <!-- JS (senin eski okuma fonksiyonunu koruyoruz) -->
   <script>
-    const btn = document.getElementById("speakBtn");
-    let speaking = false;
-    let utterance;
+    const synth = window.speechSynthesis;
+    const mouth = document.getElementById("mouth");
+    const statusEl = document.getElementById("status");
 
-    window.addEventListener("message", (event) => {
-      if (event.data && event.data.type === "dyn201_tts") {
-        if (speaking) {
-          window.speechSynthesis.cancel();
+    function getLastAssistantMessage() {
+      try {
+        const rootDoc = window.parent.document;
+
+        // Tüm chat mesajlarını bul
+        const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
+        if (!msgs.length) {
+          return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
         }
-        utterance = new SpeechSynthesisUtterance(event.data.text);
-        utterance.lang = "tr-TR";
-        window.speechSynthesis.speak(utterance);
+
+        // En son mesaj genelde asistan cevabı oluyor
+        const lastMsg = msgs[msgs.length - 1];
+
+        // İçindeki markdown metnini al
+        const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
+        const text = (md ? md.innerText : lastMsg.innerText || "").trim();
+
+        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+      } catch (e) {
+        console.error("Son mesaj okunamadı:", e);
+        return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
       }
+    }
+
+    function startTalking(text) {
+      if (!('speechSynthesis' in window)) {
+        statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
+        return;
+      }
+      synth.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "tr-TR";
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
+
+      mouth.style.height = "42px";
+
+      utter.onend = () => {
+        mouth.style.height = "30px";
+      };
+
+      synth.speak(utter);
+      statusEl.textContent = "Cevap sesli olarak okunuyor...";
+    }
+
+    function stopTalking() {
+      if ('speechSynthesis' in window) {
+        synth.cancel();
+      }
+      mouth.style.height = "30px";
+      statusEl.textContent = "Okuma durduruldu.";
+    }
+
+    document.getElementById("btnPlay").addEventListener("click", () => {
+      const text = getLastAssistantMessage();
+      startTalking(text);
     });
 
-    btn.addEventListener("click", () => {
-      speaking = !speaking;
-      if (!speaking) {
-        window.speechSynthesis.cancel();
-      }
+    document.getElementById("btnStop").addEventListener("click", () => {
+      stopTalking();
     });
   </script>
-
 </body>
 </html>
