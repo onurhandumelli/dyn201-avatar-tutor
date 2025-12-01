@@ -14,29 +14,28 @@ st.set_page_config(
     layout="wide",
 )
 
-# CSS: sticky avatar + kaydırılabilir chat kutusu
+# CSS: avatar sabit (fixed) + istersen kullanabileceğin chat kutusu stilleri
 st.markdown(
     """
     <style>
     .sticky-avatar {
-        position: sticky;
-        top: 120px;
+        position: fixed;
+        bottom: 40px;
+        left: 40px;
+        z-index: 9999;
     }
 
-    /* Chat kutusu: sabit yükseklik + içten scroll */
-    div[data-testid="stVerticalBlock"]:has(> #dyn201-chat-anchor) {
+    /* Chat kutusu: sabit yükseklik + içten scroll (istersen kullan) */
+    .dyn201-chat-box {
         max-height: 380px;
         overflow-y: auto;
         padding-right: 8px;
         margin-bottom: 1.2rem;
         border-radius: 12px;
-        background: #050814;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     }
 
     /* Streamlit'in chat mesaj kartlarının arası çok açılmasın */
-    div[data-testid="stVerticalBlock"]:has(> #dyn201-chat-anchor) [data-testid="stChatMessage"] {
+    .dyn201-chat-box [data-testid="stChatMessage"] {
         margin-bottom: 0.4rem;
     }
     </style>
@@ -66,7 +65,7 @@ left_col, right_col = st.columns([1, 2])
 
 # ----------------- SOL SÜTUN (AVATAR + NOTLAR) -----------------
 with left_col:
-    # Avatar bileşeni (solda sabit dursun)
+    # Avatar bileşeni (ekrana sabitlenmiş div içinde)
     st.markdown('<div class="sticky-avatar">', unsafe_allow_html=True)
     try:
         avatar_html = open("avatar_widget.html", "r", encoding="utf-8").read()
@@ -87,12 +86,13 @@ with left_col:
 with right_col:
     st.markdown("### Soru–Cevap (Chat)")
 
-    # Kullanıcıdan yeni mesaj
+    # 1) Kullanıcıdan yeni mesajı al
     user_msg = st.chat_input(
         "DYN201 ile ilgili soru sor veya çözüm adımını yaz...",
         key="dyn201_chat_input",
     )
 
+    # 2) Yeni mesaj geldiyse önce geçmişi güncelle
     if user_msg:
         # Kullanıcı mesajını geçmişe ekle
         st.session_state.chat_history.append(
@@ -106,12 +106,12 @@ with right_col:
             extra_context=extra_notes,
         )
 
+        # Cevabı geçmişe ekle
         st.session_state.chat_history.append(
             {"role": "assistant", "content": bot_reply}
         )
 
-        # --- Avatarın cevabı yüksek sesle okuması için iframe'e mesaj gönder ---
-        # (Mevcut TTS davranışın neyse aynen çalışmaya devam edecek)
+        # Avatarın cevabı yüksek sesle okuması için iframe'e mesaj gönder
         tts_text_json = json.dumps(bot_reply)
         st.markdown(
             f"""
@@ -129,18 +129,17 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # --- KAYDIRILABİLİR CHAT KUTUSU (tüm geçmiş burada çiziliyor) ---
-    chat_container = st.container()
-    with chat_container:
-        # Özel anchor: CSS ile bu bloğu pencere haline getireceğiz
-        st.markdown('<div id="dyn201-chat-anchor"></div>', unsafe_allow_html=True)
+    # 3) Bütün sohbet geçmişini sırayla göster (soru + altında cevap)
+    # (İstersen aşağıdaki iki satırın yorum işaretlerini açıp chat-box stilini aktif edebilirsin)
+    # st.markdown('<div class="dyn201-chat-box">', unsafe_allow_html=True)
 
-        # Geçmiş mesajları göster (her zaman soru + altında cevap sırası)
-        for msg in st.session_state.chat_history:
-            with st.chat_message("user" if msg["role"] == "user" else "assistant"):
-                st.markdown(msg["content"])
+    for msg in st.session_state.chat_history:
+        with st.chat_message("user" if msg["role"] == "user" else "assistant"):
+            st.markdown(msg["content"])
 
-    # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME (CHAT KUTUSUNUN ALTINDA SABİT) -----
+    # st.markdown("</div>", unsafe_allow_html=True)
+
+    # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME -----
     st.markdown("### Soru / Çözüm Fotoğrafı Yükle")
     st.caption(
         "Dynamics ile ilgili bir *soru* veya *defterindeki çözümünün fotoğrafını* "
