@@ -153,7 +153,7 @@
     <div class="subtitle">
       Bu avatar tamamen FREEWARE teknolojilerle çalışır.
       DYN201 sorularını cevaplarken sana eşlik eder.
-      Cevapları Türkçe sesle okuyabilir.
+      Tarayıcı destekliyorsa cevapları Türkçe sesle okuyabilir.
     </div>
 
     <div class="btn-row">
@@ -162,29 +162,38 @@
     </div>
 
     <div class="status" id="status">
-      Son cevabı okumak için "Cevabı sesli okusun" butonuna bas.
+      Son DYN201 cevabını okumak için butona bas.
     </div>
   </div>
 
   <script>
-    // ---- Son cevabı burada tutacağız ----
-    let lastAnswerText = "Merhaba, ben DYN201 avatar eğitmeninim.";
-
-    // Streamlit'ten gelen postMessage'ı dinle
-    window.addEventListener("message", (event) => {
-      const data = event.data;
-      if (data && data.type === "dyn201_tts") {
-        if (typeof data.text === "string" && data.text.trim().length > 0) {
-          lastAnswerText = data.text.trim();
-          document.getElementById("status").textContent =
-            "Yeni cevap alındı. İstersen sesli dinleyebilirsin.";
-        }
-      }
-    });
-
     const synth = window.speechSynthesis;
     const mouth = document.getElementById("mouth");
     const statusEl = document.getElementById("status");
+
+    function getLastAssistantMessage() {
+      try {
+        const rootDoc = window.parent.document;
+
+        // Tüm chat mesajlarını bul
+        const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
+        if (!msgs.length) {
+          return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+        }
+
+        // En son mesaj genelde asistan cevabı oluyor
+        const lastMsg = msgs[msgs.length - 1];
+
+        // İçindeki markdown metnini al
+        const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
+        const text = (md ? md.innerText : lastMsg.innerText || "").trim();
+
+        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+      } catch (e) {
+        console.error("Son mesaj okunamadı:", e);
+        return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
+      }
+    }
 
     function startTalking(text) {
       if (!('speechSynthesis' in window)) {
@@ -205,6 +214,7 @@
       };
 
       synth.speak(utter);
+      statusEl.textContent = "Cevap sesli olarak okunuyor...";
     }
 
     function stopTalking() {
@@ -212,10 +222,12 @@
         synth.cancel();
       }
       mouth.style.height = "30px";
+      statusEl.textContent = "Okuma durduruldu.";
     }
 
     document.getElementById("btnPlay").addEventListener("click", () => {
-      startTalking(lastAnswerText);
+      const text = getLastAssistantMessage();
+      startTalking(text);
     });
 
     document.getElementById("btnStop").addEventListener("click", () => {
