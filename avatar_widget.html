@@ -173,24 +173,23 @@
 
     // Otomatik okuma açık mı?
     let autoRead = false;
-    // En son okunan asistan cevabı
-    let lastSpokenText = "";
+    // Kaç tane asistan cevabı gördük
+    let lastAssistantCount = 0;
 
-    // --- Son asistan mesajını DOM'dan çek ---
-    function getLastAssistantMessage() {
+    // Tüm asistan mesajlarını ve sonuncunun text'ini getir
+    function getAssistantState() {
       try {
         const rootDoc = window.parent.document;
 
-        // Tüm chat balonlarını al
         const allMsgs = Array.from(
           rootDoc.querySelectorAll('div[data-testid="stChatMessage"]')
         );
 
         if (!allMsgs.length) {
-          return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+          return { count: 0, text: "" };
         }
 
-        // Asistan avatarı olanları filtrele (normalde bunlar asistan mesajı)
+        // Asistan avatarı olan balonlar = asistan cevapları
         let assistantMsgs = allMsgs.filter(msg =>
           msg.querySelector('[data-testid="stChatMessageAvatarAssistant"]')
         );
@@ -200,15 +199,16 @@
           assistantMsgs = allMsgs;
         }
 
-        const lastAssistant = assistantMsgs[assistantMsgs.length - 1];
+        const count = assistantMsgs.length;
+        const lastAssistant = assistantMsgs[count - 1];
 
         const md = lastAssistant.querySelector('[data-testid="stMarkdown"]');
         const text = (md ? md.innerText : lastAssistant.innerText || "").trim();
 
-        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+        return { count, text };
       } catch (e) {
-        console.error("Son mesaj okunamadı:", e);
-        return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
+        console.error("Asistan mesajları okunamadı:", e);
+        return { count: 0, text: "" };
       }
     }
 
@@ -217,6 +217,11 @@
         statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
         return;
       }
+      if (!text) {
+        statusEl.textContent = "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+        return;
+      }
+
       synth.cancel();
 
       const utter = new SpeechSynthesisUtterance(text);
@@ -228,6 +233,9 @@
 
       utter.onend = () => {
         mouth.style.height = "30px";
+        if (autoRead) {
+          statusEl.textContent = "Sesli okuma modu açık. Yeni cevaplar otomatik okunacak.";
+        }
       };
 
       synth.speak(utter);
@@ -245,10 +253,10 @@
     // Play: modu aç + o anki son cevabı hemen oku
     document.getElementById("btnPlay").addEventListener("click", () => {
       autoRead = true;
-      const text = getLastAssistantMessage();
-      lastSpokenText = text;
-      startTalking(text);
-      statusEl.textContent = "Sesli okuma modu açık. Yeni cevaplar da otomatik okunacak.";
+      const state = getAssistantState();
+      lastAssistantCount = state.count; // şu ana kadarki cevap sayısını kaydet
+      startTalking(state.text);
+      statusEl.textContent = "Sesli okuma modu açık. Yeni cevaplar otomatik okunacak.";
     });
 
     // Stop: modu kapat
@@ -257,21 +265,18 @@
       stopTalking();
     });
 
-    // --- Yeni cevapları yakalamak için küçük bir döngü ---
-    // AutoRead açıksa, belli aralıklarla son asistan cevabına bak.
-    // Daha önce okunmamış yeni bir metin varsa otomatik oku.
+    // AutoRead açıksa yeni cevap var mı diye periyodik kontrol:
+    // asistan mesajlarının sayısı arttıysa yeni cevap gelmiş demektir → hemen oku
     setInterval(() => {
       if (!autoRead) return;
 
-      const text = getLastAssistantMessage();
-      if (!text) return;
+      const state = getAssistantState();
 
-      // Aynı metni tekrar tekrar okuma
-      if (text === lastSpokenText) return;
-
-      lastSpokenText = text;
-      startTalking(text);
-    }, 1500); // 1.5 saniyede bir kontrol et
+      if (state.count > lastAssistantCount) {
+        lastAssistantCount = state.count;
+        startTalking(state.text);
+      }
+    }, 1500); // 1.5 sn'de bir kontrol
   </script>
 </body>
 </html>
