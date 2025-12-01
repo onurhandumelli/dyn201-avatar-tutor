@@ -99,10 +99,41 @@ with right_col:
             unsafe_allow_html=True,
         )
 
-    # 3) Tüm sohbet geçmişini sırayla göster (her zaman soru + altında cevap)
-    for msg in st.session_state.chat_history:
-        with st.chat_message("user" if msg["role"] == "user" else "assistant"):
-            st.markdown(msg["content"])
+     # 3) Sohbet geçmişini YENİDEN ESKİYE doğru, ama her zaman
+    #    "öğrenci mesajı + altında avatar cevabı" şeklinde göster.
+
+    history = st.session_state.chat_history
+
+    if not history:
+        pass
+    else:
+        # İlk mesaj (karşılama) hep en tepede kalsın
+        first = history[0]
+        with st.chat_message("assistant"):
+            st.markdown(first["content"])
+
+        # Geri kalanları (1. elemandan itibaren) user/assistant çiftleri olarak grupla
+        pairs = []
+        i = 1
+        while i < len(history):
+            user_msg = history[i] if history[i]["role"] == "user" else None
+            assistant_msg = (
+                history[i + 1]
+                if i + 1 < len(history) and history[i + 1]["role"] == "assistant"
+                else None
+            )
+            pairs.append((user_msg, assistant_msg))
+            i += 2  # her seferinde (user, assistant) çiftini atlıyoruz
+
+        # En yeni çiftler en üstte görünsün diye ters çevir
+        for user_msg, assistant_msg in reversed(pairs):
+            if user_msg:
+                with st.chat_message("user"):
+                    st.markdown(user_msg["content"])
+            if assistant_msg:
+                with st.chat_message("assistant"):
+                    st.markdown(assistant_msg["content"])
+
 
     # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME -----
     st.markdown("### Soru / Çözüm Fotoğrafı Yükle")
