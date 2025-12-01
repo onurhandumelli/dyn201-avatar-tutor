@@ -166,116 +166,123 @@
     </div>
   </div>
 
-  <script>
-    const synth = window.speechSynthesis;
-    const mouth = document.getElementById("mouth");
-    const statusEl = document.getElementById("status");
+<script>
+  const synth = window.speechSynthesis;
+  const mouth = document.getElementById("mouth");
+  const statusEl = document.getElementById("status");
 
-    let selectedVoice = null;
+  let selectedVoice = null;
 
-    // Türkçe sese göre voice seçimi
-    function pickTurkishVoice() {
-      const voices = synth.getVoices();
-      if (!voices || !voices.length) return;
+  // Türkçe sese göre voice seçimi
+  function pickTurkishVoice() {
+    const voices = synth.getVoices();
+    if (!voices || !voices.length) return;
 
-      selectedVoice =
-        voices.find(v => v.lang.toLowerCase().startsWith("tr")) ||
-        voices.find(v => v.name.toLowerCase().includes("turk")) ||
-        voices.find(v => v.lang.toLowerCase().includes("tr"));
+    // Önce Google / doğal Türkçe sesleri dene
+    selectedVoice =
+      voices.find(v =>
+        v.lang.toLowerCase().startsWith("tr") &&
+        v.name.toLowerCase().includes("google")
+      ) ||
+      voices.find(v => v.lang.toLowerCase().startsWith("tr")) ||
+      voices.find(v => v.name.toLowerCase().includes("turk")) ||
+      voices.find(v => v.lang.toLowerCase().includes("tr"));
 
-      if (selectedVoice) {
-        console.log("Seçilen ses:", selectedVoice.name, selectedVoice.lang);
-        statusEl.textContent =
-          `Ses hazır: ${selectedVoice.name} (${selectedVoice.lang}). Son DYN201 cevabını okumak için butona bas.`;
-      } else {
-        statusEl.textContent =
-          "Türkçe ses bulunamadı, varsayılan ses ile okuyacağım.";
+    if (selectedVoice) {
+      console.log("Seçilen ses:", selectedVoice.name, selectedVoice.lang);
+      statusEl.textContent =
+        `Ses hazır: ${selectedVoice.name} (${selectedVoice.lang}). Son DYN201 cevabını okumak için butona bas.`;
+    } else {
+      statusEl.textContent =
+        "Türkçe ses bulunamadı, varsayılan ses ile okuyacağım.";
+    }
+  }
+
+  if (typeof synth.onvoiceschanged !== "undefined") {
+    synth.onvoiceschanged = pickTurkishVoice;
+  }
+  pickTurkishVoice();
+
+  function getLastAssistantMessage() {
+    try {
+      const rootDoc = window.parent.document;
+
+      const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
+      if (!msgs.length) {
+        return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
       }
+
+      const lastMsg = msgs[msgs.length - 1];
+
+      const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
+      let text = (md ? md.innerText : lastMsg.innerText || "").trim();
+
+      // Çok satırlı / gereksiz boşlukları sadeleştir (daha doğal okuma için)
+      text = text.replace(/\s+/g, " ");
+
+      return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+    } catch (e) {
+      console.error("Son mesaj okunamadı:", e);
+      return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
+    }
+  }
+
+  function startTalking(text) {
+    if (!("speechSynthesis" in window)) {
+      statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
+      return;
     }
 
-    if (typeof synth.onvoiceschanged !== "undefined") {
-      synth.onvoiceschanged = pickTurkishVoice;
-    }
-    pickTurkishVoice();
+    synth.cancel();
 
-    function getLastAssistantMessage() {
-      try {
-        const rootDoc = window.parent.document;
+    const utter = new SpeechSynthesisUtterance(text);
 
-        const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
-        if (!msgs.length) {
-          return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
-        }
-
-        const lastMsg = msgs[msgs.length - 1];
-
-        const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
-        const text = (md ? md.innerText : lastMsg.innerText || "").trim();
-
-        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
-      } catch (e) {
-        console.error("Son mesaj okunamadı:", e);
-        return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
-      }
+    // Seçilen Türkçe ses varsa onu kullan
+    if (selectedVoice) {
+      utter.voice = selectedVoice;
+      utter.lang = selectedVoice.lang;
+    } else {
+      utter.lang = "tr-TR";
     }
 
-    function startTalking(text) {
-      if (!("speechSynthesis" in window)) {
-        statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
-        return;
-      }
+    // *** Doğal ayarlar ***
+    utter.rate  = 1.0;   // hız: normal
+    utter.pitch = 1.0;   // perde: normal
+    utter.volume = 1.0;  // ses seviyesi: tam
 
-      synth.cancel();
+    mouth.style.height = "42px";
 
-      const utter = new SpeechSynthesisUtterance(text);
-
-      // Seçilen Türkçe ses varsa onu kullan
-      if (selectedVoice) {
-        utter.voice = selectedVoice;
-        utter.lang = selectedVoice.lang;
-      } else {
-        utter.lang = "tr-TR";
-      }
-
-      // Tuning
-      utter.rate = 0.9;    // Biraz daha yavaş
-      utter.pitch = 0.95;  // Hafif daha tok ses
-      utter.volume = 1.0;
-
-      mouth.style.height = "42px";
-
-      utter.onend = () => {
-        mouth.style.height = "30px";
-        statusEl.textContent =
-          "Okuma bitti. Son cevabı tekrar dinlemek için butona bas.";
-      };
-
-      utter.onerror = (e) => {
-        console.error("TTS error:", e);
-        mouth.style.height = "30px";
-        statusEl.textContent = "Okuma sırasında bir hata oluştu.";
-      };
-
-      synth.speak(utter);
-      statusEl.textContent = "Cevap sesli olarak okunuyor...";
-    }
-
-    function stopTalking() {
-      if ("speechSynthesis" in window) {
-        synth.cancel();
-      }
+    utter.onend = () => {
       mouth.style.height = "30px";
-      statusEl.textContent = "Okuma durduruldu. Tekrar dinlemek için butona bas.";
+      statusEl.textContent =
+        "Okuma bitti. Son cevabı tekrar dinlemek için butona bas.";
+    };
+
+    utter.onerror = (e) => {
+      console.error("TTS error:", e);
+      mouth.style.height = "30px";
+      statusEl.textContent = "Okuma sırasında bir hata oluştu.";
+    };
+
+    synth.speak(utter);
+    statusEl.textContent = "Cevap sesli olarak okunuyor...";
+  }
+
+  function stopTalking() {
+    if ("speechSynthesis" in window) {
+      synth.cancel();
     }
+    mouth.style.height = "30px";
+    statusEl.textContent = "Okuma durduruldu. Tekrar dinlemek için butona bas.";
+  }
 
-    document.getElementById("btnPlay").addEventListener("click", () => {
-      const text = getLastAssistantMessage();
-      startTalking(text);
-    });
+  document.getElementById("btnPlay").addEventListener("click", () => {
+    const text = getLastAssistantMessage();
+    startTalking(text);
+  });
 
-    document.getElementById("btnStop").addEventListener("click", () => {
-      stopTalking();
-    });
-  </script>
-</body>
-</html>
+  document.getElementById("btnStop").addEventListener("click", () => {
+    stopTalking();
+  });
+</script>
+
