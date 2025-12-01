@@ -166,87 +166,75 @@
     </div>
   </div>
 
-<script>
-  const synth = window.speechSynthesis;
-  const mouth = document.getElementById("mouth");
-  const statusEl = document.getElementById("status");
+  <script>
+    const synth = window.speechSynthesis;
+    const mouth = document.getElementById("mouth");
+    const statusEl = document.getElementById("status");
 
-  function getLastAssistantMessage() {
-    try {
-      const rootDoc = window.parent.document;
+    // *** SADECE EN SON ASİSTAN MESAJINI BUL ***
+    function getLastAssistantMessage() {
+      try {
+        const rootDoc = window.parent.document;
 
-      // Tüm chat mesaj kutularını al
-      const allMsgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
-      if (!allMsgs.length) {
-        return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
-      }
+        // Tüm chat mesajlarını al
+        const allMsgs = Array.from(
+          rootDoc.querySelectorAll('div[data-testid="stChatMessage"]')
+        );
 
-      let lastAssistantMsg = null;
-
-      // Sondan başa doğru git → içindeki avatar asistan mı diye bak
-      for (let i = allMsgs.length - 1; i >= 0; i--) {
-        const msg = allMsgs[i];
-        const isAssistant = msg.querySelector('[data-testid="chatAvatarIcon-assistant"]');
-        if (isAssistant) {
-          lastAssistantMsg = msg;
-          break;
+        if (!allMsgs.length) {
+          return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
         }
+
+        // Asistan avatarı olan balonları filtrele
+        let assistantMsgs = allMsgs.filter(msg =>
+          msg.querySelector('[data-testid="stChatMessageAvatarAssistant"]')
+        );
+
+        // Her ihtimale karşı, asistan etiketi bulunamazsa tüm mesajlardan devam et
+        if (!assistantMsgs.length) {
+          assistantMsgs = allMsgs;
+        }
+
+        // En son asistan mesajını al
+        let lastAssistant = assistantMsgs[assistantMsgs.length - 1];
+
+        // İçindeki markdown metnini çek
+        let md = lastAssistant.querySelector('[data-testid="stMarkdown"]');
+        let text = (md ? md.innerText : lastAssistant.innerText || "").trim();
+
+        // Eğer bu sabit açılış cümlesi ise, bir önceki asistan cevabını kullan
+        if (text.includes("DYN201 avatar eğitmenim")) {
+          if (assistantMsgs.length >= 2) {
+            lastAssistant = assistantMsgs[assistantMsgs.length - 2];
+            md = lastAssistant.querySelector('[data-testid="stMarkdown"]');
+            text = (md ? md.innerText : lastAssistant.innerText || "").trim();
+          }
+        }
+
+        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+      } catch (e) {
+        console.error("Son mesaj okunamadı:", e);
+        return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
       }
+    }
 
-      if (!lastAssistantMsg) {
-        return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+    function startTalking(text) {
+      if (!('speechSynthesis' in window)) {
+        statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
+        return;
       }
-
-      // O kutunun içindeki markdown metnini al
-      const md = lastAssistantMsg.querySelector('[data-testid="stMarkdown"]');
-      const text = (md ? md.innerText : lastAssistantMsg.innerText || "").trim();
-
-      return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
-    } catch (e) {
-      console.error("Son mesaj okunamadı:", e);
-      return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
-    }
-  }
-
-  function startTalking(text) {
-    if (!('speechSynthesis' in window)) {
-      statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
-      return;
-    }
-    synth.cancel();
-
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = "tr-TR";
-    utter.rate = 1.0;
-    utter.pitch = 1.0;
-
-    mouth.style.height = "42px";
-
-    utter.onend = () => {
-      mouth.style.height = "30px";
-    };
-
-    synth.speak(utter);
-    statusEl.textContent = "Cevap sesli olarak okunuyor...";
-  }
-
-  function stopTalking() {
-    if ('speechSynthesis' in window) {
       synth.cancel();
-    }
-    mouth.style.height = "30px";
-    statusEl.textContent = "Okuma durduruldu.";
-  }
 
-  document.getElementById("btnPlay").addEventListener("click", () => {
-    const text = getLastAssistantMessage();
-    startTalking(text);
-  });
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "tr-TR";
+      utter.rate = 1.0;
+      utter.pitch = 1.0;
 
-  document.getElementById("btnStop").addEventListener("click", () => {
-    stopTalking();
-  });
-</script>
+      mouth.style.height = "42px";
 
-</body>
-</html>
+      utter.onend = () => {
+        mouth.style.height = "30px";
+      };
+
+      synth.speak(utter);
+      statusEl.textContent = "Cevap sesli
