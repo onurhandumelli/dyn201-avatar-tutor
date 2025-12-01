@@ -1,5 +1,3 @@
-import json
-
 import streamlit as st
 import streamlit.components.v1 as components
 
@@ -14,25 +12,27 @@ st.set_page_config(
     layout="wide",
 )
 
-# CSS: sticky avatar + kaydırılabilir chat kutusu
+# Sticky avatar + chat penceresi için CSS
 st.markdown(
     """
     <style>
     .sticky-avatar {
         position: sticky;
-        top: 120px;
+        top: 80px;
     }
 
-    /* Chat kutusu: sabit yükseklik + içten scroll */
+    /* Chat penceresi: sabit yükseklik, içten scroll */
     .dyn201-chat-box {
         max-height: 380px;
         overflow-y: auto;
-        padding-right: 8px;
+        padding: 12px 12px 12px 0;
         margin-bottom: 1.2rem;
-        border-radius: 12px;
+        border-radius: 16px;
+        background: #050814;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
     }
 
-    /* Streamlit'in chat mesaj kartlarının arası çok açılmasın */
     .dyn201-chat-box [data-testid="stChatMessage"] {
         margin-bottom: 0.4rem;
     }
@@ -84,20 +84,9 @@ with left_col:
 with right_col:
     st.markdown("### Soru–Cevap (Chat)")
 
-    # --- KAYDIRILABİLİR CHAT KUTUSU ---
-    st.markdown('<div class="dyn201-chat-box">', unsafe_allow_html=True)
-
-    # Geçmiş mesajları göster
-    for msg in st.session_state.chat_history:
-        with st.chat_message("user" if msg["role"] == "user" else "assistant"):
-            st.markdown(msg["content"])
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    # Kullanıcıdan yeni mesaj
+    # Kullanıcıdan yeni mesaj (önce girdi alınır)
     user_msg = st.chat_input(
-        "DYN201 ile ilgili soru sor veya çözüm adımını yaz...",
-        key="dyn201_chat_input",
+        "DYN201 ile ilgili soru sor veya çözüm adımını yaz..."
     )
 
     if user_msg:
@@ -113,37 +102,25 @@ with right_col:
             extra_context=extra_notes,
         )
 
+        # Cevabı geçmişe ekle
         st.session_state.chat_history.append(
             {"role": "assistant", "content": bot_reply}
         )
 
-        # Yeni cevabı hemen ekranda göster (scroll kutusuna yeni render'da eklenecek)
-        with st.chat_message("assistant"):
-            st.markdown(bot_reply)
+    # --- Tüm sohbeti kaydırılabilir kutu içinde göster ---
+    st.markdown('<div class="dyn201-chat-box">', unsafe_allow_html=True)
 
-        # --- Avatarın cevabı yüksek sesle okuması için iframe'e mesaj gönder ---
-        tts_text_json = json.dumps(bot_reply)
-        st.markdown(
-            f"""
-            <script>
-            // avatar_widget iframe'ini bul ve içine mesaj gönder
-            const frame = window.document.querySelector("iframe[src*='avatar_widget.html']");
-            if (frame && frame.contentWindow) {{
-                frame.contentWindow.postMessage({{
-                  type: "dyn201_tts",
-                  text: {tts_text_json}
-                }}, "*");
-            }}
-            </script>
-            """,
-            unsafe_allow_html=True,
-        )
+    for msg in st.session_state.chat_history:
+        with st.chat_message("user" if msg["role"] == "user" else "assistant"):
+            st.markdown(msg["content"])
 
-    # ----- FOTOĞRAF / ÇÖZÜM YÜKLEME (CHAT KUTUSUNUN ALTINDA SABİT) -----
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # ----- FOTOĞRAF YÜKLEME -----
     st.markdown("### Soru / Çözüm Fotoğrafı Yükle")
     st.caption(
-        "Dynamics ile ilgili bir **soru** veya **defterindeki çözümünün fotoğrafını** "
-        "buraya yükleyebilirsin. Avatar çözümünü kontrol eder."
+        "Dynamics ile ilgili bir *soru* veya *defterindeki çözümün fotoğrafını* "
+        "buraya yükleyebilirsin."
     )
 
     uploaded_file = st.file_uploader(
@@ -160,7 +137,7 @@ with right_col:
 
 
 # --------------------------------------------------
-# MİKROFON → CHAT GİRDİSİ (avatar'dan gelen sesli giriş)
+# MİKROFON → CHAT GİRDİSİ (Web Speech API entegrasyonu)
 # --------------------------------------------------
 st.markdown(
     """
@@ -169,20 +146,20 @@ st.markdown(
     window.addEventListener("message", (event) => {
       const data = event.data;
       if (data && data.type === "dyn201_voice_input") {
-        const text = data.text || "";
+        const text = data.text;
 
-        // Streamlit chat_input alanını bul (textarea + placeholder)
-        const areas = window.document.querySelectorAll('textarea');
-        for (const ta of areas) {
-          if (ta.placeholder === 'DYN201 ile ilgili soru sor veya çözüm adımını yaz...') {
-            ta.value = text;
+        // Streamlit chat_input alanını bul (placeholder'a göre)
+        const inputs = window.parent.document.querySelectorAll('input');
+        for (const inp of inputs) {
+          if (inp.getAttribute('placeholder') === 'DYN201 ile ilgili soru sor veya çözüm adımını yaz...') {
+            inp.value = text;
             const enterEvent = new KeyboardEvent('keydown', {
               key: 'Enter',
               keyCode: 13,
               which: 13,
               bubbles: true
             });
-            ta.dispatchEvent(enterEvent);
+            inp.dispatchEvent(enterEvent);
             break;
           }
         }
