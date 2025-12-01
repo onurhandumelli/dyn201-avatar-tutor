@@ -195,13 +195,9 @@
       stopMouthAnimation(); // eski interval varsa temizle
       let open = false;
       mouthInterval = setInterval(() => {
-        if (open) {
-          mouth.style.height = "30px"; // kapalı
-        } else {
-          mouth.style.height = "50px"; // açık
-        }
+        mouth.style.height = open ? "30px" : "50px";
         open = !open;
-      }, 120); // 120ms'de bir aç/kapa (hafif hızlı, konuşma gibi)
+      }, 120);
     }
 
     function stopMouthAnimation() {
@@ -209,7 +205,7 @@
         clearInterval(mouthInterval);
         mouthInterval = null;
       }
-      mouth.style.height = "30px"; // normal pozisyona dön
+      mouth.style.height = "30px";
     }
 
     // --- 1) Türkçe, mümkünse erkek sese yaklaş ---
@@ -246,24 +242,37 @@
     }
     pickTurkishVoice();
 
-    // --- 2) Son asistan mesajını DOM'dan çek ---
+    // --- 2) Son asistan mesajını DOM'dan çek (ilk selamı hariç tut) ---
     function getLastAssistantMessage() {
+      const GREETING_PREFIX =
+        "merhaba, ben dyn201 avatar eğitmeninim";
+
       try {
         const rootDoc = window.parent.document;
-
         const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
         if (!msgs.length) {
           return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
         }
 
-        const lastMsg = msgs[msgs.length - 1];
+        // Sondan başa doğru tara; ilk selam dışındaki dolu metni al
+        for (let i = msgs.length - 1; i >= 0; i--) {
+          const el = msgs[i];
+          const md = el.querySelector('[data-testid="stMarkdown"]');
+          let text = (md ? md.innerText : el.innerText || "").trim();
+          if (!text) continue;
 
-        const md = lastMsg.querySelector('[data-testid="stMarkdown"]');
-        let text = (md ? md.innerText : lastMsg.innerText || "").trim();
+          text = text.replace(/\s+/g, " ");
 
-        text = text.replace(/\s+/g, " ");
+          const lower = text.toLowerCase();
+          if (lower.startsWith(GREETING_PREFIX)) {
+            // İlk sabit selamı atla
+            continue;
+          }
 
-        return text || "Şu anda okunacak bir DYN201 cevabı bulamadım.";
+          return text;
+        }
+
+        return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
       } catch (e) {
         console.error("Son mesaj okunamadı:", e);
         return "Tarayıcı kısıtlaması nedeniyle son cevabı okuyamıyorum.";
@@ -333,4 +342,4 @@
     });
   </script>
 </body>
-</html> 
+</html>
