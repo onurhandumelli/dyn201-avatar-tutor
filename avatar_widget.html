@@ -59,10 +59,6 @@
       border-radius: 999px;
       background: #ffffff;
       position: relative;
-      overflow: hidden;
-      /* Göz kırpma animasyonu */
-      transform-origin: center center;
-      animation: blink 4s infinite;
     }
 
     .eye::after {
@@ -76,24 +72,12 @@
       left: 8px;
     }
 
-    @keyframes blink {
-      0%, 88%, 100% {
-        transform: scaleY(1);
-      }
-      90%, 92% {
-        transform: scaleY(0.1);
-      }
-      94%, 96% {
-        transform: scaleY(1);
-      }
-    }
-
     .mouth {
       width: 70px;
       height: 30px;
       border-radius: 0 0 40px 40px;
       background: #020617;
-      transition: height 0.08s ease;
+      transition: height 0.12s ease;
     }
 
     .body {
@@ -173,7 +157,7 @@
     </div>
 
     <div class="btn-row">
-      <button class="btn btn-play" id="btnPlay">Cevabı sesli okusun</button>
+      <button class="btn btn-play" id="btnPlay">Ana cevabı sesli okusun</button>
       <button class="btn btn-stop" id="btnStop">Durdur</button>
     </div>
 
@@ -187,91 +171,41 @@
     const mouth = document.getElementById("mouth");
     const statusEl = document.getElementById("status");
 
-    let selectedVoice = null;
-    let mouthInterval = null;
+    // APP.PY'DEN GELEN SON CEVAP BURADA TUTULACAK
+    let latestAnswerText = "";
 
-    // --- AĞIZ ANİMASYONU ---
-    function startMouthAnimation() {
-      stopMouthAnimation(); // eski interval varsa temizle
-      let open = false;
-      mouthInterval = setInterval(() => {
-        mouth.style.height = open ? "30px" : "50px";
-        open = !open;
-      }, 120);
-    }
+    // Streamlit tarafı her yeni cevapta iframe'e şu mesajı yolluyor:
+    // { type: "dyn201_tts", text: "<bot_reply>" }
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || typeof data !== "object") return;
 
-    function stopMouthAnimation() {
-      if (mouthInterval) {
-        clearInterval(mouthInterval);
-        mouthInterval = null;
+      if (data.type === "dyn201_tts") {
+        latestAnswerText = (data.text || "").toString();
+        if (latestAnswerText.trim().length > 0) {
+          statusEl.textContent = "Son cevabı okumaya hazırım. 'Ana cevabı sesli okusun' butonuna basabilirsin.";
+        }
       }
-      mouth.style.height = "30px";
-    }
+    });
 
-    // --- 1) Türkçe, mümkünse erkek sese yaklaş ---
-    function pickTurkishVoice() {
-      const voices = synth.getVoices();
-      if (!voices || !voices.length) return;
-
-      const turkishVoices = voices.filter(v =>
-        v.lang && v.lang.toLowerCase().startsWith("tr")
-      );
-
-      const maleLike = turkishVoices.find(v =>
-        /tolga|ahmet|microsoft|male|erkek|natural/i.test(v.name)
-      );
-
-      const googleTr = turkishVoices.find(v =>
-        /google/i.test(v.name)
-      );
-
-      selectedVoice = maleLike || googleTr || turkishVoices[0] || null;
-
-      if (selectedVoice) {
-        console.log("Seçilen ses:", selectedVoice.name, selectedVoice.lang);
-        statusEl.textContent =
-          `Ses hazır: ${selectedVoice.name} (${selectedVoice.lang}). Son DYN201 cevabını okumak için butona bas.`;
-      } else {
-        statusEl.textContent =
-          "Türkçe ses bulunamadı, varsayılan ses ile okuyacağım.";
-      }
-    }
-
-    if (typeof synth.onvoiceschanged !== "undefined") {
-      synth.onvoiceschanged = pickTurkishVoice;
-    }
-    pickTurkishVoice();
-
-    // --- 2) Son asistan mesajını DOM'dan çek (ilk selamı hariç tut) ---
-    function getLastAssistantMessage() {
-      const GREETING_PREFIX =
-        "merhaba, ben dyn201 avatar eğitmeninim";
-
+    // Yedek: Hiç latestAnswerText yoksa DOM'dan bul (ilk yüklemede vs.)
+    function getLastAssistantMessageFromDOM() {
       try {
         const rootDoc = window.parent.document;
         const msgs = rootDoc.querySelectorAll('div[data-testid="stChatMessage"]');
         if (!msgs.length) {
           return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
         }
-
-        // Sondan başa doğru tara; ilk selam dışındaki dolu metni al
-        for (let i = msgs.length - 1; i >= 0; i--) {
+        // En sondaki değil, en üstteki son asistan cevabını almak için baştan tarama
+        for (let i = 0; i < msgs.length; i++) {
           const el = msgs[i];
           const md = el.querySelector('[data-testid="stMarkdown"]');
-          let text = (md ? md.innerText : el.innerText || "").trim();
-          if (!text) continue;
-
-          text = text.replace(/\s+/g, " ");
-
-          const lower = text.toLowerCase();
-          if (lower.startsWith(GREETING_PREFIX)) {
-            // İlk sabit selamı atla
-            continue;
+          const text = (md ? md.innerText : el.innerText || "").trim();
+          if (text) {
+            // Son asistan cevabını bulmak yerine, DOM’dan genel bir fallback verelim
+            return text;
           }
-
-          return text;
         }
-
         return "Şu anda okunacak bir DYN201 cevabı bulamadım.";
       } catch (e) {
         console.error("Son mesaj okunamadı:", e);
@@ -279,61 +213,44 @@
       }
     }
 
-    // --- 3) Konuşmayı başlat ---
     function startTalking(text) {
-      if (!("speechSynthesis" in window)) {
+      if (!('speechSynthesis' in window)) {
         statusEl.textContent = "Tarayıcı metin okuma özelliğini desteklemiyor.";
         return;
       }
-
       synth.cancel();
-      stopMouthAnimation();
 
       const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = "tr-TR";
+      // Biraz daha doğal ve anlaşılır hız / ton
+      utter.rate = 0.9;
+      utter.pitch = 0.95;
 
-      if (selectedVoice) {
-        utter.voice = selectedVoice;
-        utter.lang = selectedVoice.lang;
-      } else {
-        utter.lang = "tr-TR";
-      }
-
-      // Hafif yavaş, hafif tok
-      utter.rate  = 0.93;
-      utter.pitch = 0.9;
-      utter.volume = 1.0;
-
-      utter.onstart = () => {
-        startMouthAnimation();
-        statusEl.textContent = "Cevap sesli olarak okunuyor...";
-      };
+      mouth.style.height = "42px";
 
       utter.onend = () => {
-        stopMouthAnimation();
-        statusEl.textContent =
-          "Okuma bitti. Son cevabı tekrar dinlemek için butona bas.";
-      };
-
-      utter.onerror = (e) => {
-        console.error("TTS error:", e);
-        stopMouthAnimation();
-        statusEl.textContent = "Okuma sırasında bir hata oluştu.";
+        mouth.style.height = "30px";
+        statusEl.textContent = "Okuma bitti. Aynı cevabı tekrar dinlemek için yeniden butona basabilirsin.";
       };
 
       synth.speak(utter);
+      statusEl.textContent = "Cevap sesli olarak okunuyor...";
     }
 
-    // --- 4) Durdur ---
     function stopTalking() {
-      if ("speechSynthesis" in window) {
+      if ('speechSynthesis' in window) {
         synth.cancel();
       }
-      stopMouthAnimation();
-      statusEl.textContent = "Okuma durduruldu. Tekrar dinlemek için butona bas.";
+      mouth.style.height = "30px";
+      statusEl.textContent = "Okuma durduruldu.";
     }
 
     document.getElementById("btnPlay").addEventListener("click", () => {
-      const text = getLastAssistantMessage();
+      // Önce app.py'den gelen en son cevabı kullan
+      let text = latestAnswerText && latestAnswerText.trim().length > 0
+        ? latestAnswerText
+        : getLastAssistantMessageFromDOM();
+
       startTalking(text);
     });
 
