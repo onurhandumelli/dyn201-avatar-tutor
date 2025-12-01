@@ -1,307 +1,58 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html>
 <head>
   <meta charset="UTF-8" />
   <title>DYN201 Avatar</title>
   <style>
-    body {
-      margin: 0;
-      padding: 10px;
-      background: #050814;
-      color: #f5f5f5;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    }
-
-    .avatar-wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      height: 400px;
-    }
-
-    .head {
-      width: 190px;
-      height: 210px;
-      background: radial-gradient(circle at 30% 20%, #3bd9ff 0, #131b33 40%, #050814 100%);
-      border-radius: 50% 50% 45% 45%;
-      position: relative;
-      box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
-    }
-
-    .eye {
-      width: 30px;
-      height: 18px;
-      background: #f5f5f5;
-      border-radius: 50px;
-      position: absolute;
-      top: 70px;
-      overflow: hidden;
-    }
-
-    .eye.left { left: 45px; }
-    .eye.right { right: 45px; }
-
-    .pupil {
-      width: 12px;
-      height: 12px;
-      background: #111;
-      border-radius: 50%;
-      position: absolute;
-      top: 3px;
-      left: 9px;
-    }
-
-    .mouth {
-      width: 82px;
-      height: 18px;
-      background: #111;
-      border-radius: 0 0 50px 50px;
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 40px;
-      transition: height 0.12s ease, transform 0.12s ease, background 0.12s ease;
-    }
-
-    .mouth.talking {
-      height: 36px;
-      transform: translateX(-50%) translateY(6px);
-      background: #b32a4a;
-    }
-
-    .torso {
-      width: 145px;
-      height: 95px;
-      background: linear-gradient(180deg, #1abf79, #0f6b45);
-      border-radius: 30px;
-      margin-top: -12px;
-      box-shadow: 0 0 18px rgba(0, 255, 165, 0.28);
-    }
-
-    .btn-row {
-      display: flex;
-      gap: 8px;
-      margin-top: 18px;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border-radius: 999px;
-      border: none;
-      background: #26a69a;
-      color: white;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 0 10px rgba(0, 255, 165, 0.3);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
-    .btn:hover {
-      background: #1f8f82;
-    }
-
-    .btn.stop {
-      background: #e53935;
-      box-shadow: 0 0 10px rgba(255, 82, 82, 0.35);
-    }
-
-    .btn.stop:hover {
-      background: #c62828;
-    }
-
-    .hint {
-      margin-top: 10px;
-      font-size: 11px;
-      opacity: 0.85;
-      text-align: center;
-      max-width: 260px;
-    }
+    body { margin: 0; background: #111; color: white; }
+    #canvas-container { width: 100%; height: 70%; }
+    #speak-btn { width: 100%; padding: 10px; margin-top: 10px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/wawa-lipsync/dist/wawa-lipsync.umd.js"></script> <!-- opsiyonel --> <!-- :contentReference[oaicite:12]{index=12} -->
+  <script src="https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead/dist/TalkingHead.min.js"></script> <!-- :contentReference[oaicite:13]{index=13} -->
 </head>
 <body>
-  <div class="avatar-wrapper">
-    <div class="head">
-      <div class="eye left">
-        <div class="pupil"></div>
-      </div>
-      <div class="eye right">
-        <div class="pupil"></div>
-      </div>
-      <div id="mouth" class="mouth"></div>
-    </div>
-    <div class="torso"></div>
-
-    <div class="btn-row">
-      <button id="speakBtn" class="btn">Cevabı sesli okusun</button>
-      <button id="stopBtn" class="btn stop">Durdur</button>
-    </div>
-
-    <div class="hint">
-      Bu avatar tamamen FREEWARE teknolojilerle yapıldı.<br />
-      Gemini cevabını tarayıcıdaki Türkçe sesle okuyor ve konuşma sırasında animasyon yapıyor.
-    </div>
-  </div>
+  <div id="canvas-container"></div>
+  <button id="speak-btn">Avatar konuşsun</button>
 
   <script>
-    // Python tarafı burayı son cevapla dolduruyor
-    const answerText = `{{ANSWER_PLACEHOLDER}}`;
+    const textToSpeak = `{{ANSWER_PLACEHOLDER}}`;
 
-    const mouth = document.getElementById("mouth");
-    const speakBtn = document.getElementById("speakBtn");
-    const stopBtn = document.getElementById("stopBtn");
+    // 1) TalkingHead 3D avatarı başlat
+    const container = document.getElementById('canvas-container');
+    const avatar = new TalkingHead.TalkingHead({
+      container,
+      avatarUrl: 'PATH/TO/ready-player-me-avatar.glb', // ücretsiz bir RPM avatarı kullan :contentReference[oaicite:14]{index=14}
+      autoRotate: true
+    });
 
-    let talkingInterval = null;
-    let voices = [];
-
-    function loadVoices() {
-      voices = window.speechSynthesis.getVoices() || [];
-    }
-
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-    loadVoices();
-
-    function pickTurkishVoice() {
-      if (!voices.length) return null;
-      // Dil kodunda "tr" geçen sesi bulmaya çalış
-      return (
-        voices.find(v => v.lang && v.lang.toLowerCase().startsWith("tr")) ||
-        voices.find(v => v.lang && v.lang.toLowerCase().includes("tr")) ||
-        null
-      );
-    }
-
-    function startMouthAnimation() {
-      if (talkingInterval) return;
-      talkingInterval = setInterval(() => {
-        mouth.classList.toggle("talking");
-      }, 120);
-    }
-
-    function stopMouthAnimation() {
-      if (talkingInterval) {
-        clearInterval(talkingInterval);
-        talkingInterval = null;
-      }
-      mouth.classList.remove("talking");
-    }
-
+    // 2) Web Speech API ile TTS
     function speak(text) {
-      if (!("speechSynthesis" in window)) {
-        alert("Tarayıcında speechSynthesis desteği yok (Chrome / Edge dene).");
-        return;
-      }
-      if (!text || text.trim().length === 0) {
-        alert("Önce chat bölümünde bir soru sor ve asistanın cevap vermesini bekle.");
-        return;
-      }
-
-      // Eski konuşmaları ve animasyonu durdur
-      window.speechSynthesis.cancel();
-      stopMouthAnimation();
-
+      if (!text || !window.speechSynthesis) return;
       const utter = new SpeechSynthesisUtterance(text);
-
-      const trVoice = pickTurkishVoice();
-      if (trVoice) {
-        utter.voice = trVoice;
-        utter.lang = trVoice.lang;
-      } else {
-        // Ses listesinde Türkçe yoksa en azından dil kodunu TR yap
-        utter.lang = "tr-TR";
-      }
-
-      utter.rate = 1.0;
+      utter.lang = 'en-US';
+      // Ses oynarken ses örneklerini almak için:
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = audioCtx.createMediaStreamDestination();
+      // Basit yol: wawa-lipsync yerine, TalkingHead'in built-in audio analizini kullan
+      // Eğer wawa-lipsync entegrasyonu yaparsan, buradan audio verisini ona da verirsin
 
       utter.onstart = () => {
-        startMouthAnimation();
+        // Avatar konuşma animasyonu başlat
+        avatar.startSpeaking(); // TalkingHead dokümantasyonunda karşılığı var
       };
-
       utter.onend = () => {
-        stopMouthAnimation();
+        avatar.stopSpeaking();
+        audioCtx.close();
       };
 
       window.speechSynthesis.speak(utter);
     }
 
-    function stopSpeaking() {
-      if (!("speechSynthesis" in window)) return;
-      window.speechSynthesis.cancel();
-      stopMouthAnimation();
-    }
-
-    speakBtn.addEventListener("click", () => {
-      speak(answerText);
-    });
-
-    stopBtn.addEventListener("click", () => {
-      stopSpeaking();
-    });
-
-    // Sayfa her yüklendiğinde varsa önceki konuşmayı kes
-    window.addEventListener("load", () => {
-      stopSpeaking();
+    document.getElementById('speak-btn').addEventListener('click', () => {
+      speak(textToSpeak);
     });
   </script>
- <!-- MİKROFON BUTONU VE WEB SPEECH API -->
-<div style="margin-top: 16px; text-align: center;">
-  <button id="mic-btn"
-          style="padding: 8px 16px; border-radius: 999px; border: none;
-                 background-color: #00b894; color: white; font-weight: bold; cursor: pointer;">
-    🎤 Konuşmayı Başlat / Durdur
-  </button>
-  <p id="mic-status" style="color: #cccccc; font-size: 12px; margin-top: 8px;"></p>
-</div>
-
-<script>
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  if (SpeechRecognition) {
-    const recog = new SpeechRecognition();
-    recog.lang = "tr-TR";
-    recog.continuous = false;
-    recog.interimResults = false;
-
-    const btn = document.getElementById("mic-btn");
-    const status = document.getElementById("mic-status");
-
-    let listening = false;
-
-    btn.onclick = function() {
-      if (!listening) {
-        recog.start();
-        listening = true;
-        status.textContent = "Dinliyorum...";
-      } else {
-        recog.stop();
-        listening = false;
-        status.textContent = "Durduruldu.";
-      }
-    };
-
-    recog.onresult = function(event) {
-      const text = event.results[0][0].transcript;
-      status.textContent = "Algılanan: " + text;
-
-      // Streamlit uygulamasına gönder
-      window.parent.postMessage(
-        { type: "dyn201_voice_input", text: text },
-        "*"
-      );
-    };
-
-    recog.onerror = function(e) {
-      status.textContent = "Ses tanıma hatası: " + e.error;
-      listening = false;
-    };
-  } else {
-    const status = document.getElementById("mic-status");
-    if (status) {
-      status.textContent = "Tarayıcı Web Speech API (ses tanıma) desteklemiyor.";
-    }
-  }
-</script>
- 
 </body>
 </html>
